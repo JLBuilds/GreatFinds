@@ -9,7 +9,7 @@ import {
   type PlaceDraft,
 } from "../../_components/PlaceFields";
 import { PlaceLookup, type LookupResult } from "./PlaceLookup";
-import { placePhotoUrl, type Folder } from "@/lib/types";
+import { bandRange, placePhotoUrl, type Folder } from "@/lib/types";
 
 export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
   const router = useRouter();
@@ -26,7 +26,10 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
       area: r.area ?? d.area,
       city: r.city ?? d.city,
       price_level: r.price_level ?? d.price_level,
-      price_range: r.price_range ?? d.price_range,
+      // Normalise Google's price into our preset band so the radio and
+      // the price filter line up.
+      price_range:
+        bandRange(r.price_level) ?? r.price_range ?? d.price_range,
       link: d.link || (r.website ?? ""),
       google_place_id: r.google_place_id,
       google_maps_url: r.google_maps_url,

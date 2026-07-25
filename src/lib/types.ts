@@ -50,6 +50,28 @@ export function priceLabel(level: number | null): string {
   return "$".repeat(Math.min(4, Math.max(1, level)));
 }
 
+/** Preset price bands, mapped 1:1 to Google's price levels so that
+ *  choosing a band both labels the place and makes it filterable.
+ *  Selecting a band sets price_level (for filtering) and price_range
+ *  (the human label shown on listings). */
+export const PRICE_BANDS: Array<{
+  level: number;
+  symbol: string;
+  range: string;
+}> = [
+  { level: 1, symbol: "$", range: "Under AED 75" },
+  { level: 2, symbol: "$$", range: "AED 75–200" },
+  { level: 3, symbol: "$$$", range: "AED 200–400" },
+  { level: 4, symbol: "$$$$", range: "AED 400+" },
+];
+
+/** The band range string for a Google price level (used to normalise
+ *  Google's auto-filled price into our preset bands). */
+export function bandRange(level: number | null): string | null {
+  const b = PRICE_BANDS.find((band) => band.level === level);
+  return b ? b.range : null;
+}
+
 /** Two-letter monogram for avatar circles ("Jo Lehndorf" → "JL"). */
 export function initials(name: string | null | undefined): string {
   if (!name) return "?";

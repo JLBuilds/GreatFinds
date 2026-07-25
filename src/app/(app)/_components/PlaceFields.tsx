@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Folder, RestaurantStatus } from "@/lib/types";
+import { PRICE_BANDS, type Folder, type RestaurantStatus } from "@/lib/types";
 import { createFolder } from "../actions";
 
 /** The editable fields shared by the Add and Edit forms. */
@@ -215,53 +215,45 @@ export function PlaceFields({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label htmlFor="pf-city" className={labelCls}>
-            City
-          </label>
-          <input
-            id="pf-city"
-            value={draft.city}
-            onChange={(e) => set({ city: e.target.value })}
-            placeholder="Dubai"
-            className={inputCls}
-          />
-        </div>
-        <div className="space-y-1">
-          <span className={labelCls}>Price</span>
-          <div className="flex gap-1">
-            {[1, 2, 3, 4].map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() =>
-                  set({ price_level: draft.price_level === p ? null : p })
-                }
-                className={
-                  draft.price_level != null && p <= draft.price_level
-                    ? "flex-1 rounded-lg bg-coral text-ink py-3 font-body text-xs font-semibold"
-                    : "flex-1 rounded-lg bg-card border border-line text-fog py-3 font-body text-xs"
-                }
-              >
-                $
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       <div className="space-y-1">
-        <label htmlFor="pf-pricerange" className={labelCls}>
-          Price range (optional)
+        <label htmlFor="pf-city" className={labelCls}>
+          City
         </label>
         <input
-          id="pf-pricerange"
-          value={draft.price_range ?? ""}
-          onChange={(e) => set({ price_range: e.target.value || null })}
-          placeholder="e.g. AED 50–150 — auto-filled from Google when available"
+          id="pf-city"
+          value={draft.city}
+          onChange={(e) => set({ city: e.target.value })}
+          placeholder="Dubai"
           className={inputCls}
         />
+      </div>
+
+      <div className="space-y-1.5">
+        <span className={labelCls}>Price</span>
+        <div className="grid grid-cols-2 gap-2">
+          {PRICE_BANDS.map((b) => {
+            const active = draft.price_level === b.level;
+            return (
+              <button
+                key={b.level}
+                type="button"
+                onClick={() =>
+                  active
+                    ? set({ price_level: null, price_range: null })
+                    : set({ price_level: b.level, price_range: b.range })
+                }
+                className={
+                  active
+                    ? "rounded-lg bg-coral text-ink px-3 py-2 text-left"
+                    : "rounded-lg bg-card border border-line text-mist px-3 py-2 text-left"
+                }
+              >
+                <span className="block text-sm font-semibold">{b.symbol}</span>
+                <span className="block text-[11px] opacity-80">{b.range}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="space-y-1">
