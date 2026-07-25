@@ -8,7 +8,7 @@ import {
   extractPhotoNames,
   placeJsonToLookup,
 } from "../add/_components/PlaceLookup";
-import { bandRange, placePhotoUrl } from "@/lib/types";
+import { placePhotoUrl } from "@/lib/types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Hit = { placeId: string; name: string; address: string | null; json: any };
@@ -79,7 +79,7 @@ function Inner({ query }: { query: string }) {
       area: r.area,
       city: r.city,
       price_level: r.price_level,
-      price_range: bandRange(r.price_level) ?? r.price_range,
+      price_range: r.price_range,
       status: "want_to_try",
       recommended_by: null,
       notes: null,

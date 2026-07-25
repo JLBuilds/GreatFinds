@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps";
+import { levelFromRangeText } from "@/lib/types";
 
 /** What the Google Places lookup hands back to the form. */
 export type LookupResult = {
@@ -72,6 +73,8 @@ export function extractPhotoNames(j: any): string[] {
  *  Shared by the autocomplete widget and the home-screen fallback search. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function placeJsonToLookup(j: any): LookupResult {
+  const priceRange = extractPriceRange(j);
+  const googleLevel = j.priceLevel ? (PRICE_MAP[j.priceLevel] ?? null) : null;
   return {
     name: j.displayName ?? "",
     address: j.formattedAddress ?? null,
@@ -79,8 +82,10 @@ export function placeJsonToLookup(j: any): LookupResult {
     lng: j.location?.lng ?? null,
     google_place_id: j.id ?? null,
     google_maps_url: j.googleMapsURI ?? null,
-    price_level: j.priceLevel ? (PRICE_MAP[j.priceLevel] ?? null) : null,
-    price_range: extractPriceRange(j),
+    // Prefer Google's coarse level; fall back to deriving one from the
+    // range so the place is still filterable by price.
+    price_level: googleLevel ?? levelFromRangeText(priceRange),
+    price_range: priceRange,
     cuisine: cuisineFromTypes(j.types),
     area:
       componentText(j.addressComponents, "sublocality") ??

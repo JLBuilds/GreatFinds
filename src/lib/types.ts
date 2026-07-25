@@ -72,6 +72,30 @@ export function bandRange(level: number | null): string | null {
   return b ? b.range : null;
 }
 
+/** Derive a 1–4 band level from a price-range string's starting amount.
+ *  Lets places that Google gave a text range but no level (e.g.
+ *  "AED 50–100") still be filtered by price. Thresholds match PRICE_BANDS. */
+export function levelFromRangeText(text: string | null): number | null {
+  if (!text) return null;
+  const m = text.match(/(\d[\d,]*)/);
+  if (!m) return null;
+  const n = parseInt(m[1].replace(/,/g, ""), 10);
+  if (Number.isNaN(n)) return null;
+  if (n < 75) return 1;
+  if (n < 200) return 2;
+  if (n < 400) return 3;
+  return 4;
+}
+
+/** The effective price level for filtering: the stored level, or one
+ *  derived from the range text when the level is missing. */
+export function priceLevelOf(r: {
+  price_level: number | null;
+  price_range: string | null;
+}): number | null {
+  return r.price_level ?? levelFromRangeText(r.price_range);
+}
+
 /** Two-letter monogram for avatar circles ("Jo Lehndorf" → "JL"). */
 export function initials(name: string | null | undefined): string {
   if (!name) return "?";

@@ -12,6 +12,7 @@ import {
   placePhotoUrl,
   prettyDomain,
   priceLabel,
+  priceLevelOf,
   type Folder,
   type Restaurant,
   type RestaurantStatus,
@@ -80,7 +81,7 @@ export function PlacesList({
       if (folderId === "none" && r.folder_id !== null) return false;
       if (folderId !== null && folderId !== "none" && r.folder_id !== folderId)
         return false;
-      if (priceFilter !== null && r.price_level !== priceFilter) return false;
+      if (priceFilter !== null && priceLevelOf(r) !== priceFilter) return false;
       if (!q) return true;
       return [r.name, r.cuisine, r.area, r.city, r.recommended_by, r.notes]
         .filter(Boolean)
