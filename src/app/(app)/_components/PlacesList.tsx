@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { createFolder } from "../actions";
 import {
   STATUS_META,
+  extractUrl,
   initials,
   placePhotoUrl,
+  prettyDomain,
   priceLabel,
   type Folder,
   type Restaurant,
@@ -269,17 +271,22 @@ export function PlacesList({
                   </span>
                 ) : null}
                 {who ? (
-                  <span className="flex items-center gap-1.5 mt-0.5">
-                    <span
-                      className="w-[18px] h-[18px] rounded-full text-[9px] font-semibold flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: meta.pin, color: "#1F1D2B" }}
-                    >
-                      {initials(who)}
-                    </span>
-                    <span className="text-[12px] font-medium text-mist truncate">
-                      {who}
-                    </span>
-                  </span>
+                  (() => {
+                    const url = extractUrl(who);
+                    return (
+                      <span className="flex items-center gap-1.5 mt-0.5">
+                        <span
+                          className="w-[18px] h-[18px] rounded-full text-[9px] font-semibold flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: meta.pin, color: "#1F1D2B" }}
+                        >
+                          {url ? "↗" : initials(who)}
+                        </span>
+                        <span className="text-[12px] font-medium text-mist truncate">
+                          {url ? prettyDomain(url) : who}
+                        </span>
+                      </span>
+                    );
+                  })()
                 ) : null}
               </div>
             </Link>

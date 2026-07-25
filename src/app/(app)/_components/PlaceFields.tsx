@@ -252,6 +252,19 @@ export function PlaceFields({
       </div>
 
       <div className="space-y-1">
+        <label htmlFor="pf-pricerange" className={labelCls}>
+          Price range (optional)
+        </label>
+        <input
+          id="pf-pricerange"
+          value={draft.price_range ?? ""}
+          onChange={(e) => set({ price_range: e.target.value || null })}
+          placeholder="e.g. AED 50–150 — auto-filled from Google when available"
+          className={inputCls}
+        />
+      </div>
+
+      <div className="space-y-1">
         <label htmlFor="pf-who" className={labelCls}>
           Recommended by
         </label>
@@ -259,7 +272,7 @@ export function PlaceFields({
           id="pf-who"
           value={draft.recommended_by}
           onChange={(e) => set({ recommended_by: e.target.value })}
-          placeholder="Who told you about it?"
+          placeholder="A person's name — or paste an article link"
           className={inputCls}
         />
       </div>

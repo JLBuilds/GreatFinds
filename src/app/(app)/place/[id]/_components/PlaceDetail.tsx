@@ -17,11 +17,32 @@ import { FolderPicker } from "./FolderPicker";
 import {
   STATUS_META,
   placePhotoUrl,
+  prettyDomain,
   priceLabel,
   type Folder,
   type Restaurant,
   type RestaurantStatus,
 } from "@/lib/types";
+
+/** Render text, turning any http(s) URL into a clickable link labelled
+ *  by its domain (so a long article URL reads cleanly). */
+function withLinks(text: string) {
+  return text.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
+    /^https?:\/\//.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-coral underline underline-offset-2"
+      >
+        {prettyDomain(part)}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
+  );
+}
 
 function toDraft(r: Restaurant): PlaceDraft {
   return {
@@ -228,10 +249,10 @@ export function PlaceDetail({
         ) : null}
 
         {restaurant.recommended_by || addedBy ? (
-          <p className="font-body text-sm text-mist">
-            {restaurant.recommended_by
-              ? `Recommended by ${restaurant.recommended_by}`
-              : null}
+          <p className="font-body text-sm text-mist break-words">
+            {restaurant.recommended_by ? (
+              <>Recommended by {withLinks(restaurant.recommended_by)}</>
+            ) : null}
             {restaurant.recommended_by && addedBy ? " · " : null}
             {addedBy ? `added by ${addedBy}` : null}
           </p>

@@ -9,8 +9,10 @@ import {
 } from "@vis.gl/react-google-maps";
 import {
   STATUS_META,
+  extractUrl,
   initials,
   placePhotoUrl,
+  prettyDomain,
   priceLabel,
   type Restaurant,
   type RestaurantStatus,
@@ -199,11 +201,14 @@ export function MapScreen({ restaurants }: { restaurants: Restaurant[] }) {
                     className="w-[18px] h-[18px] rounded-full text-[9px] font-semibold flex items-center justify-center shrink-0"
                     style={{ backgroundColor: openMeta.pin, color: "#1F1D2B" }}
                   >
-                    {initials(openWho)}
+                    {extractUrl(openWho) ? "↗" : initials(openWho)}
                   </span>
                 ) : null}
                 <span className="text-[13px] font-medium text-mist truncate">
-                  {open.notes ?? `via ${openWho}`}
+                  {open.notes ??
+                    (openWho && extractUrl(openWho)
+                      ? `via ${prettyDomain(extractUrl(openWho) as string)}`
+                      : `via ${openWho}`)}
                 </span>
               </span>
             ) : null}

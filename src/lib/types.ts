@@ -60,6 +60,23 @@ export function initials(name: string | null | undefined): string {
   return (first + second).toUpperCase();
 }
 
+/** First http(s) URL found in a string, or null. Lets "Recommended by"
+ *  hold an article link as well as a person's name. */
+export function extractUrl(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const m = text.match(/https?:\/\/[^\s]+/);
+  return m ? m[0] : null;
+}
+
+/** "https://www.cntravellerme.com/story/..." → "cntravellerme.com" */
+export function prettyDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
 /**
  * Media URL for a Google Places photo resource name. Rendered with the
  * public browser key — Google photo media is designed to be fetched
