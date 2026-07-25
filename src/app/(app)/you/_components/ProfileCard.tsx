@@ -28,18 +28,18 @@ export function ProfileCard({
   }
 
   return (
-    <div className="rounded-3xl bg-white/70 p-4 space-y-4">
+    <div className="rounded-xl bg-card p-4 space-y-4">
       <div className="space-y-1">
-        <p className="font-body text-xs text-basil/60 tracking-wide uppercase">
+        <p className="font-body text-xs text-fog tracking-wide uppercase">
           Signed in as
         </p>
-        <p className="font-body text-sm text-basil">{email}</p>
+        <p className="font-body text-sm text-snow">{email}</p>
       </div>
 
       <div className="space-y-1">
         <label
           htmlFor="display-name"
-          className="block font-body text-xs text-basil/60 tracking-wide uppercase"
+          className="block font-body text-xs text-fog tracking-wide uppercase"
         >
           Your name
         </label>
@@ -48,24 +48,24 @@ export function ProfileCard({
             id="display-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="flex-1 rounded-2xl bg-cream px-4 py-2.5 font-body text-sm text-basil focus:outline-none"
+            className="flex-1 rounded-lg bg-ink px-4 py-2.5 font-body text-sm text-snow focus:outline-none"
           />
           <button
             onClick={save}
             disabled={saving || !name.trim() || name === displayName}
-            className="rounded-full bg-basil text-cream px-4 py-2 font-body text-xs font-medium disabled:opacity-40"
+            className="rounded-full bg-coral text-ink px-4 py-2 font-body text-xs font-medium disabled:opacity-40"
           >
             {saved ? "Saved ✓" : saving ? "…" : "Save"}
           </button>
         </div>
-        <p className="font-display italic text-xs text-basil/50 pt-1">
+        <p className="font-display text-xs text-fog/80 pt-1">
           Shown next to places you add.
         </p>
       </div>
 
       <button
         onClick={() => signOut()}
-        className="w-full rounded-full bg-cream text-basil/70 py-2.5 font-body text-sm hover:text-basil"
+        className="w-full rounded-full bg-ink text-fog py-2.5 font-body text-sm hover:text-snow"
       >
         Sign out
       </button>

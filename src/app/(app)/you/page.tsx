@@ -21,7 +21,7 @@ export default async function YouPage() {
 
   return (
     <main className="max-w-sm mx-auto px-4 pt-6 space-y-5">
-      <h1 className="font-display text-3xl text-basil">You</h1>
+      <h1 className="font-display text-3xl text-snow">You</h1>
 
       <ProfileCard
         email={user?.email ?? ""}
@@ -31,10 +31,10 @@ export default async function YouPage() {
       {admin ? (
         <Link
           href="/you/invites"
-          className="block rounded-3xl bg-white/70 p-4 hover:bg-white transition-colors"
+          className="block rounded-xl bg-card p-4 hover:bg-card/80 transition-colors"
         >
-          <p className="font-display text-lg text-basil">Invites</p>
-          <p className="font-body text-xs text-basil/60">
+          <p className="font-display text-lg text-snow">Invites</p>
+          <p className="font-body text-xs text-fog">
             Invite friends & family, review access requests.
           </p>
         </Link>

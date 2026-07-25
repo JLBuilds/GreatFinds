@@ -1,17 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Ubuntu } from "next/font/google";
+import { Barlow } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const barlow = Barlow({
+  variable: "--font-barlow",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const ubuntu = Ubuntu({
-  variable: "--font-ubuntu",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -37,10 +31,8 @@ export const metadata: Metadata = {
     ],
   },
   appleWebApp: {
-    // Tells iOS this is a PWA — launched from home screen, Safari chrome
-    // is hidden and the app runs in standalone mode.
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "GreatFind",
   },
   formatDetection: {
@@ -49,7 +41,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#23503A",
+  themeColor: "#1F1D2B",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -62,11 +54,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${fraunces.variable} ${ubuntu.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col font-body bg-cream text-basil">
+    <html lang="en" className={`${barlow.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col font-body bg-ink text-snow">
         {children}
       </body>
     </html>

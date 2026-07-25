@@ -26,16 +26,27 @@ export type Profile = {
   display_name: string;
 };
 
+/* Kept design accents: warm amber = want to try, lilac = been,
+   coral = favourite. `pin` doubles as the map marker colour. */
 export const STATUS_META: Record<
   RestaurantStatus,
   { label: string; emoji: string; pin: string }
 > = {
-  want_to_try: { label: "Want to try", emoji: "✨", pin: "#EEB64B" },
-  been: { label: "Been", emoji: "✓", pin: "#2F9E77" },
-  favorite: { label: "Favourite", emoji: "♥", pin: "#B03A5B" },
+  want_to_try: { label: "Want to try", emoji: "✨", pin: "#FFB572" },
+  been: { label: "Been", emoji: "✓", pin: "#9288E0" },
+  favorite: { label: "Favourite", emoji: "♥", pin: "#EA7C69" },
 };
 
 export function priceLabel(level: number | null): string {
   if (!level) return "";
   return "$".repeat(Math.min(4, Math.max(1, level)));
+}
+
+/** Two-letter monogram for avatar circles ("Jo Lehndorf" → "JL"). */
+export function initials(name: string | null | undefined): string {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? "";
+  const second = parts.length > 1 ? (parts[parts.length - 1][0] ?? "") : (parts[0]?.[1] ?? "");
+  return (first + second).toUpperCase();
 }

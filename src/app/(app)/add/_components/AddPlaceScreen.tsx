@@ -59,8 +59,8 @@ export function AddPlaceScreen() {
   return (
     <main className="max-w-sm mx-auto px-4 pt-6 space-y-5">
       <header>
-        <h1 className="font-display text-3xl text-basil">Add a place</h1>
-        <p className="font-display italic text-sm text-basil/60">
+        <h1 className="font-display text-3xl text-snow">Add a place</h1>
+        <p className="font-display text-sm text-fog">
           Search Google first — it fills everything in.
         </p>
       </header>
@@ -68,7 +68,7 @@ export function AddPlaceScreen() {
       <PlaceLookup onSelect={applyLookup} />
 
       {lookedUp ? (
-        <p className="font-body text-xs text-mint">
+        <p className="font-body text-xs text-warm">
           ✓ Found it — details filled in below. Adjust anything, then save.
         </p>
       ) : null}
@@ -83,13 +83,13 @@ export function AddPlaceScreen() {
         <PlaceFields draft={draft} onChange={setDraft} />
 
         {error ? (
-          <p className="font-body text-sm text-berry text-center">{error}</p>
+          <p className="font-body text-sm text-coral text-center">{error}</p>
         ) : null}
 
         <button
           type="submit"
           disabled={saving || !draft.name.trim()}
-          className="w-full bg-tomato text-white rounded-full py-3 font-body font-medium hover:opacity-90 disabled:opacity-40"
+          className="w-full bg-coral text-ink rounded-lg py-3 font-body font-medium hover:opacity-90 disabled:opacity-40"
         >
           {saving ? "Saving…" : "Save place"}
         </button>

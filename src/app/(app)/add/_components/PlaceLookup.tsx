@@ -124,7 +124,7 @@ export function PlaceLookup({
 
   if (!apiKey) {
     return (
-      <p className="rounded-2xl bg-white/50 px-4 py-3 font-display italic text-xs text-basil/60">
+      <p className="rounded-lg bg-card/60 px-4 py-3 font-display text-xs text-fog">
         Google lookup isn&apos;t configured — fill the fields in manually, or
         add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.
       </p>

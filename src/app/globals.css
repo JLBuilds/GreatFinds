@@ -11,24 +11,31 @@ body {
 }
 
 @theme {
-  /* GreatFind palette — produces bg-basil, text-tomato, border-cream, etc. */
-  --color-basil: #23503a; /* deep green — primary text & brand */
-  --color-tomato: #e05e3d; /* CTA / active */
-  --color-saffron: #eeb64b; /* "want to try" */
-  --color-berry: #b03a5b; /* "favorite" */
-  --color-mint: #2f9e77; /* "been" */
-  --color-cream: #fbf6ee; /* app background */
+  /* "Kept" dark design system (from Claude Design handoff).
+     Produces bg-ink, bg-card, border-line, text-coral, etc. */
+  --color-ink: #1f1d2b; /* app background */
+  --color-night: #16151f; /* deepest background */
+  --color-card: #2d303e; /* cards, inputs */
+  --color-line: #393c49; /* borders, dividers */
+  --color-coral: #ea7c69; /* primary accent / active / CTA */
+  --color-warm: #ffb572; /* secondary accent — "want to try" */
+  --color-lilac: #9288e0; /* tertiary accent — "been" */
+  --color-snow: #e0e6e9; /* primary text on dark */
+  --color-mist: #abbbc2; /* mid text */
+  --color-fog: #889898; /* secondary text */
 
-  /* Wired to next/font CSS variables set in src/app/layout.tsx. */
-  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
-  --font-body: var(--font-ubuntu), ui-sans-serif, system-ui, sans-serif;
+  /* Wired to next/font CSS variable set in src/app/layout.tsx. */
+  --font-body: var(--font-barlow), -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-barlow), -apple-system, "Segoe UI", sans-serif;
 }
 
-/* Google PlaceAutocompleteElement — nudge the web component toward the
-   app's input styling. */
+/* Google PlaceAutocompleteElement — match the dark input styling. */
 gmp-place-autocomplete {
   width: 100%;
-  --gmp-mat-color-surface: #ffffff;
-  --gmp-mat-color-on-surface: #23503a;
-  border-radius: 1rem;
+  --gmp-mat-color-surface: #2d303e;
+  --gmp-mat-color-on-surface: #e0e6e9;
+  --gmp-mat-color-on-surface-variant: #889898;
+  --gmp-mat-color-primary: #ea7c69;
+  border-radius: 8px;
+  border: 1px solid #393c49;
 }

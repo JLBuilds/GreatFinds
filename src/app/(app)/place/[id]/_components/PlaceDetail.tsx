@@ -101,13 +101,13 @@ export function PlaceDetail({
     return (
       <main className="max-w-sm mx-auto px-4 pt-6 space-y-5">
         <header className="flex items-center justify-between">
-          <h1 className="font-display text-2xl text-basil">Edit place</h1>
+          <h1 className="font-display text-2xl text-snow">Edit place</h1>
           <button
             onClick={() => {
               setEditing(false);
               setDraft(toDraft(restaurant));
             }}
-            className="font-body text-sm text-basil/60"
+            className="font-body text-sm text-fog"
           >
             Cancel
           </button>
@@ -122,12 +122,12 @@ export function PlaceDetail({
         >
           <PlaceFields draft={draft} onChange={setDraft} />
           {error ? (
-            <p className="font-body text-sm text-berry text-center">{error}</p>
+            <p className="font-body text-sm text-coral text-center">{error}</p>
           ) : null}
           <button
             type="submit"
             disabled={busy || !draft.name.trim()}
-            className="w-full bg-tomato text-white rounded-full py-3 font-body font-medium hover:opacity-90 disabled:opacity-40"
+            className="w-full bg-coral text-ink rounded-lg py-3 font-body font-medium hover:opacity-90 disabled:opacity-40"
           >
             {busy ? "Saving…" : "Save changes"}
           </button>
@@ -138,13 +138,13 @@ export function PlaceDetail({
 
   return (
     <main className="max-w-sm mx-auto px-4 pt-6 space-y-5">
-      <Link href="/" className="font-body text-sm text-basil/60">
+      <Link href="/" className="font-body text-sm text-fog">
         ← All places
       </Link>
 
       <header className="space-y-2">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="font-display text-3xl text-basil leading-tight">
+          <h1 className="font-display text-3xl text-snow leading-tight">
             {restaurant.name}
           </h1>
           <button
@@ -157,7 +157,7 @@ export function PlaceDetail({
             {meta.emoji} {meta.label}
           </button>
         </div>
-        <p className="font-body text-sm text-basil/60">
+        <p className="font-body text-sm text-fog">
           {[
             restaurant.cuisine,
             restaurant.area ?? restaurant.city,
@@ -167,14 +167,14 @@ export function PlaceDetail({
             .join(" · ")}
         </p>
         {restaurant.address ? (
-          <p className="font-body text-xs text-basil/50">
+          <p className="font-body text-xs text-fog/80">
             📍 {restaurant.address}
           </p>
         ) : null}
       </header>
 
       {restaurant.recommended_by || addedBy ? (
-        <p className="font-display italic text-sm text-basil/70">
+        <p className="font-display text-sm text-fog">
           {restaurant.recommended_by
             ? `Recommended by ${restaurant.recommended_by}`
             : null}
@@ -184,8 +184,8 @@ export function PlaceDetail({
       ) : null}
 
       {restaurant.notes ? (
-        <div className="rounded-3xl bg-white/70 p-4">
-          <p className="font-body text-sm text-basil whitespace-pre-wrap">
+        <div className="rounded-xl bg-card p-4">
+          <p className="font-body text-sm text-snow whitespace-pre-wrap">
             {restaurant.notes}
           </p>
         </div>
@@ -197,7 +197,7 @@ export function PlaceDetail({
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full text-center bg-basil text-cream rounded-full py-3 font-body font-medium hover:opacity-90"
+            className="block w-full text-center bg-coral text-ink rounded-lg py-3 font-body font-medium hover:opacity-90"
           >
             Open in Google Maps →
           </a>
@@ -207,7 +207,7 @@ export function PlaceDetail({
             href={restaurant.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full text-center bg-white/70 text-basil rounded-full py-3 font-body font-medium hover:bg-white"
+            className="block w-full text-center bg-card text-snow rounded-lg py-3 font-body font-medium hover:bg-card/80"
           >
             Visit link →
           </a>
@@ -218,7 +218,7 @@ export function PlaceDetail({
         <div className="pt-2 space-y-2">
           <button
             onClick={() => setEditing(true)}
-            className="w-full bg-white/70 text-basil rounded-full py-3 font-body font-medium hover:bg-white"
+            className="w-full bg-card text-snow rounded-lg py-3 font-body font-medium hover:bg-card/80"
           >
             Edit details
           </button>
@@ -226,13 +226,13 @@ export function PlaceDetail({
             <div className="flex gap-2">
               <button
                 onClick={() => deleteRestaurant(restaurant.id)}
-                className="flex-1 bg-berry text-white rounded-full py-3 font-body font-medium hover:opacity-90"
+                className="flex-1 bg-coral text-ink rounded-lg py-3 font-body font-medium hover:opacity-90"
               >
                 Yes, delete
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="flex-1 bg-white/70 text-basil rounded-full py-3 font-body"
+                className="flex-1 bg-card text-snow rounded-lg py-3 font-body"
               >
                 Keep it
               </button>
@@ -240,7 +240,7 @@ export function PlaceDetail({
           ) : (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="w-full font-body text-sm text-basil/50 py-2"
+              className="w-full font-body text-sm text-fog/80 py-2"
             >
               Delete this place
             </button>

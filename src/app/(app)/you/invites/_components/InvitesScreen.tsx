@@ -84,41 +84,41 @@ export function InvitesScreen({
   return (
     <main className="max-w-sm mx-auto px-4 pt-6 space-y-6">
       <div>
-        <Link href="/you" className="font-body text-sm text-basil/60">
+        <Link href="/you" className="font-body text-sm text-fog">
           ← You
         </Link>
-        <h1 className="font-display text-3xl text-basil pt-2">Invites</h1>
+        <h1 className="font-display text-3xl text-snow pt-2">Invites</h1>
       </div>
 
       {/* New invite */}
-      <section className="rounded-3xl bg-white/70 p-4 space-y-3">
-        <p className="font-display text-lg text-basil">Invite someone</p>
+      <section className="rounded-xl bg-card p-4 space-y-3">
+        <p className="font-display text-lg text-snow">Invite someone</p>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="their@email.com"
-          className="w-full rounded-2xl bg-cream px-4 py-2.5 font-body text-sm text-basil placeholder:text-basil/40 focus:outline-none"
+          className="w-full rounded-lg bg-ink px-4 py-2.5 font-body text-sm text-snow placeholder:text-fog/70 focus:outline-none"
         />
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Note (optional)"
-          className="w-full rounded-2xl bg-cream px-4 py-2.5 font-body text-sm text-basil placeholder:text-basil/40 focus:outline-none"
+          className="w-full rounded-lg bg-ink px-4 py-2.5 font-body text-sm text-snow placeholder:text-fog/70 focus:outline-none"
         />
-        {error ? <p className="font-body text-sm text-berry">{error}</p> : null}
+        {error ? <p className="font-body text-sm text-coral">{error}</p> : null}
         {newLink ? (
-          <div className="rounded-2xl bg-cream p-3 space-y-1">
-            <p className="font-body text-xs text-basil/70">
+          <div className="rounded-lg bg-ink p-3 space-y-1">
+            <p className="font-body text-xs text-fog">
               Invite created — share this link:
             </p>
-            <p className="font-body text-xs text-basil break-all">{newLink}</p>
+            <p className="font-body text-xs text-snow break-all">{newLink}</p>
           </div>
         ) : null}
         <button
           onClick={invite}
           disabled={busy || !email.trim()}
-          className="w-full bg-tomato text-white rounded-full py-2.5 font-body text-sm font-medium hover:opacity-90 disabled:opacity-40"
+          className="w-full bg-coral text-ink rounded-lg py-2.5 font-body text-sm font-medium hover:opacity-90 disabled:opacity-40"
         >
           {busy ? "Creating…" : "Create invite"}
         </button>
@@ -127,16 +127,16 @@ export function InvitesScreen({
       {/* Access requests */}
       {openRequests.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="font-display text-xl text-basil">Access requests</h2>
+          <h2 className="font-display text-xl text-snow">Access requests</h2>
           {openRequests.map((r) => (
-            <div key={r.id} className="rounded-3xl bg-white/70 p-4 space-y-2">
-              <p className="font-body text-sm text-basil">{r.email}</p>
+            <div key={r.id} className="rounded-xl bg-card p-4 space-y-2">
+              <p className="font-body text-sm text-snow">{r.email}</p>
               {r.message ? (
-                <p className="font-display italic text-sm text-basil/70">
+                <p className="font-display text-sm text-fog">
                   &ldquo;{r.message}&rdquo;
                 </p>
               ) : null}
-              <p className="font-body text-xs text-basil/50">
+              <p className="font-body text-xs text-fog/80">
                 {fmtDate(r.requestedAt)}
               </p>
               <div className="flex gap-2 pt-1">
@@ -145,7 +145,7 @@ export function InvitesScreen({
                     await approveAccessRequest(r.id);
                     router.refresh();
                   }}
-                  className="flex-1 bg-mint text-white rounded-full py-2 font-body text-xs font-medium"
+                  className="flex-1 bg-lilac text-ink rounded-lg py-2 font-body text-xs font-medium"
                 >
                   Approve
                 </button>
@@ -154,7 +154,7 @@ export function InvitesScreen({
                     await declineAccessRequest(r.id);
                     router.refresh();
                   }}
-                  className="flex-1 bg-white text-basil/70 rounded-full py-2 font-body text-xs"
+                  className="flex-1 bg-card text-fog rounded-lg py-2 font-body text-xs"
                 >
                   Decline
                 </button>
@@ -167,14 +167,14 @@ export function InvitesScreen({
       {/* Pending invites */}
       {pending.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="font-display text-xl text-basil">Pending invites</h2>
+          <h2 className="font-display text-xl text-snow">Pending invites</h2>
           {pending.map((i) => (
-            <div key={i.id} className="rounded-3xl bg-white/70 p-4 space-y-2">
+            <div key={i.id} className="rounded-xl bg-card p-4 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <p className="font-body text-sm text-basil min-w-0 truncate">
+                <p className="font-body text-sm text-snow min-w-0 truncate">
                   {i.email}
                 </p>
-                <p className="font-body text-xs text-basil/50 shrink-0">
+                <p className="font-body text-xs text-fog/80 shrink-0">
                   {fmtDate(i.invitedAt)}
                 </p>
               </div>
@@ -182,7 +182,7 @@ export function InvitesScreen({
                 {i.signupUrl ? (
                   <button
                     onClick={() => copy(i.signupUrl!, i.id)}
-                    className="flex-1 bg-basil text-cream rounded-full py-2 font-body text-xs font-medium"
+                    className="flex-1 bg-coral text-ink rounded-lg py-2 font-body text-xs font-medium"
                   >
                     {copiedId === i.id ? "Copied ✓" : "Copy invite link"}
                   </button>
@@ -192,7 +192,7 @@ export function InvitesScreen({
                     await revokeInvite(i.id);
                     router.refresh();
                   }}
-                  className="bg-white text-basil/60 rounded-full px-4 py-2 font-body text-xs"
+                  className="bg-card text-fog rounded-full px-4 py-2 font-body text-xs"
                 >
                   Revoke
                 </button>
@@ -205,14 +205,14 @@ export function InvitesScreen({
       {/* Members */}
       {accepted.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="font-display text-xl text-basil">Joined</h2>
+          <h2 className="font-display text-xl text-snow">Joined</h2>
           {accepted.map((i) => (
             <div
               key={i.id}
-              className="rounded-2xl bg-white/50 px-4 py-3 flex items-center justify-between"
+              className="rounded-lg bg-card/60 px-4 py-3 flex items-center justify-between"
             >
-              <p className="font-body text-sm text-basil">{i.email}</p>
-              <p className="font-body text-xs text-basil/50">
+              <p className="font-body text-sm text-snow">{i.email}</p>
+              <p className="font-body text-xs text-fog/80">
                 {i.acceptedAt ? fmtDate(i.acceptedAt) : ""}
               </p>
             </div>

@@ -22,9 +22,9 @@ export function RequestAccessForm() {
 
   if (stage.kind === "result" && stage.result.status === "submitted") {
     return (
-      <div className="rounded-3xl bg-white/70 p-6 space-y-2 text-center">
-        <p className="font-display text-lg text-basil">Request sent.</p>
-        <p className="font-display italic text-sm text-basil/70">
+      <div className="rounded-xl bg-card p-6 space-y-2 text-center">
+        <p className="font-display text-lg text-snow">Request sent.</p>
+        <p className="font-display text-sm text-fog">
           We&apos;ll be in touch via email if approved.
         </p>
       </div>
@@ -37,11 +37,11 @@ export function RequestAccessForm() {
       { day: "numeric", month: "short", year: "numeric" },
     );
     return (
-      <div className="rounded-3xl bg-white/70 p-6 space-y-2 text-center">
-        <p className="font-display text-lg text-basil">
+      <div className="rounded-xl bg-card p-6 space-y-2 text-center">
+        <p className="font-display text-lg text-snow">
           We&apos;ve already got your request.
         </p>
-        <p className="font-display italic text-sm text-basil/70">
+        <p className="font-display text-sm text-fog">
           Sent on {when}. Sit tight.
         </p>
       </div>
@@ -50,11 +50,11 @@ export function RequestAccessForm() {
 
   if (stage.kind === "result" && stage.result.status === "already_invited") {
     return (
-      <div className="rounded-3xl bg-white/70 p-6 space-y-2 text-center">
-        <p className="font-display text-lg text-basil">
+      <div className="rounded-xl bg-card p-6 space-y-2 text-center">
+        <p className="font-display text-lg text-snow">
           Looks like you&apos;ve already got an invite.
         </p>
-        <p className="font-display italic text-sm text-basil/70">
+        <p className="font-display text-sm text-fog">
           Check your email for the invite link.
         </p>
       </div>
@@ -63,8 +63,8 @@ export function RequestAccessForm() {
 
   if (stage.kind === "result" && stage.result.status === "declined") {
     return (
-      <div className="rounded-3xl bg-white/70 p-6 space-y-2 text-center">
-        <p className="font-display italic text-base text-basil/70">
+      <div className="rounded-xl bg-card p-6 space-y-2 text-center">
+        <p className="font-display text-base text-fog">
           Thanks for your earlier note. We can&apos;t take new requests from
           this email right now.
         </p>
@@ -88,7 +88,7 @@ export function RequestAccessForm() {
       <div className="space-y-1">
         <label
           htmlFor="ra-email"
-          className="block font-body text-xs text-basil/70 tracking-wide uppercase"
+          className="block font-body text-xs text-fog tracking-wide uppercase"
         >
           Email
         </label>
@@ -99,14 +99,14 @@ export function RequestAccessForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={submitting}
-          className="w-full rounded-2xl bg-white/70 px-4 py-3 font-display text-base text-basil placeholder:text-basil/30 focus:outline-none focus:bg-white disabled:opacity-60"
+          className="w-full rounded-lg bg-card px-4 py-3 font-display text-base text-snow placeholder:text-fog/50 focus:outline-none focus:bg-card disabled:opacity-60"
         />
       </div>
 
       <div className="space-y-1">
         <label
           htmlFor="ra-message"
-          className="block font-body text-xs text-basil/70 tracking-wide uppercase"
+          className="block font-body text-xs text-fog tracking-wide uppercase"
         >
           Your note
         </label>
@@ -118,18 +118,18 @@ export function RequestAccessForm() {
           onChange={(e) => setMessage(e.target.value)}
           placeholder="How did you hear about GreatFind? What draws you to it?"
           disabled={submitting}
-          className="w-full rounded-2xl bg-white/70 px-4 py-3 font-body text-sm text-basil placeholder:text-basil/40 focus:outline-none focus:bg-white disabled:opacity-60"
+          className="w-full rounded-lg bg-card px-4 py-3 font-body text-sm text-snow placeholder:text-fog/70 focus:outline-none focus:bg-card disabled:opacity-60"
         />
       </div>
 
       {errorText && (
-        <p className="font-body text-sm text-center text-basil">{errorText}</p>
+        <p className="font-body text-sm text-center text-snow">{errorText}</p>
       )}
 
       <button
         type="submit"
         disabled={submitting || !email.trim() || message.trim().length < 4}
-        className="w-full bg-tomato text-white rounded-full py-3 font-body font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full bg-coral text-ink rounded-lg py-3 font-body font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {submitting ? "Sending…" : "Send request"}
       </button>

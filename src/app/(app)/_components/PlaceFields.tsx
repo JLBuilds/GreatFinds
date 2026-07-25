@@ -44,9 +44,9 @@ const STATUS_OPTIONS: Array<{ key: RestaurantStatus; label: string }> = [
 ];
 
 const inputCls =
-  "w-full rounded-2xl bg-white/70 px-4 py-3 font-body text-sm text-basil placeholder:text-basil/40 focus:outline-none focus:bg-white";
+  "w-full rounded-lg bg-card px-4 py-3 font-body text-sm text-snow placeholder:text-fog/70 focus:outline-none focus:bg-card";
 const labelCls =
-  "block font-body text-xs text-basil/70 tracking-wide uppercase";
+  "block font-body text-xs text-fog tracking-wide uppercase";
 
 export function PlaceFields({
   draft,
@@ -71,7 +71,7 @@ export function PlaceFields({
           className={inputCls}
         />
         {draft.address ? (
-          <p className="font-body text-xs text-basil/50 pt-0.5">
+          <p className="font-body text-xs text-fog/80 pt-0.5">
             📍 {draft.address}
           </p>
         ) : null}
@@ -87,8 +87,8 @@ export function PlaceFields({
               onClick={() => set({ status: s.key })}
               className={
                 draft.status === s.key
-                  ? "flex-1 rounded-full bg-basil text-cream px-3 py-2 font-body text-xs font-medium"
-                  : "flex-1 rounded-full bg-white/70 text-basil/70 px-3 py-2 font-body text-xs"
+                  ? "flex-1 rounded-full bg-coral text-ink px-3 py-2 font-body text-xs font-medium"
+                  : "flex-1 rounded-full bg-card text-fog px-3 py-2 font-body text-xs"
               }
             >
               {s.label}
@@ -149,8 +149,8 @@ export function PlaceFields({
                 }
                 className={
                   draft.price_level != null && p <= draft.price_level
-                    ? "flex-1 rounded-xl bg-basil text-cream py-3 font-body text-xs font-medium"
-                    : "flex-1 rounded-xl bg-white/70 text-basil/50 py-3 font-body text-xs"
+                    ? "flex-1 rounded-xl bg-coral text-ink py-3 font-body text-xs font-medium"
+                    : "flex-1 rounded-xl bg-card text-fog/80 py-3 font-body text-xs"
                 }
               >
                 $

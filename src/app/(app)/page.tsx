@@ -1,39 +1,57 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import type { Profile, Restaurant } from "@/lib/types";
+import { initials, type Profile, type Restaurant } from "@/lib/types";
 import { PlacesList } from "./_components/PlacesList";
 
 export default async function HomePage() {
   const supabase = await createClient();
 
-  const [{ data: restaurants }, { data: profiles }] = await Promise.all([
-    supabase
-      .from("restaurants")
-      .select("*")
-      .order("created_at", { ascending: false }),
-    supabase.from("profiles").select("user_id, display_name"),
-  ]);
+  const [{ data: restaurants }, { data: profiles }, userRes] =
+    await Promise.all([
+      supabase
+        .from("restaurants")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase.from("profiles").select("user_id, display_name"),
+      supabase.auth.getUser(),
+    ]);
 
   const names: Record<string, string> = {};
   for (const p of (profiles ?? []) as Profile[]) {
     names[p.user_id] = p.display_name;
   }
 
+  const me = userRes.data.user;
+  const myName = me ? (names[me.id] ?? me.email ?? "") : "";
+  const count = (restaurants ?? []).length;
+
+  const now = new Date();
+  const dateLine = now.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
   return (
-    <main className="max-w-sm mx-auto px-4 pt-6">
-      <header className="flex items-end justify-between pb-4">
-        <div>
-          <h1
-            className="font-display text-3xl text-basil"
-            style={{ fontVariationSettings: '"opsz" 144', fontWeight: 400 }}
-          >
-            GreatFind
+    <main className="max-w-sm mx-auto px-6 pt-6">
+      <header className="flex items-end justify-between pb-6">
+        <div className="flex flex-col gap-[3px]">
+          <span className="text-sm font-medium text-fog">{dateLine}</span>
+          <h1 className="text-[26px] font-semibold text-white tracking-[-0.01em]">
+            Places you&apos;ll love
           </h1>
-          <p className="font-display italic text-sm text-basil/60">
-            {(restaurants ?? []).length === 0
-              ? "No places saved yet."
-              : `${(restaurants ?? []).length} places worth remembering.`}
-          </p>
+          <span className="text-sm text-fog">
+            {count === 0
+              ? "Nothing kept yet."
+              : `${count} place${count === 1 ? "" : "s"} kept`}
+          </span>
         </div>
+        <Link
+          href="/you"
+          className="w-[42px] h-[42px] rounded-full bg-coral text-ink text-[15px] font-semibold flex items-center justify-center shrink-0"
+        >
+          {initials(myName)}
+        </Link>
       </header>
 
       <PlacesList

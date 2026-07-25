@@ -3,11 +3,11 @@ import { RequestAccessForm } from "./_components/RequestAccessForm";
 
 export default function RequestAccessPage() {
   return (
-    <main className="min-h-screen bg-cream flex items-center justify-center px-4 py-8">
+    <main className="min-h-screen bg-ink flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm space-y-6">
         <Link
           href="/login"
-          className="inline-block font-body text-sm text-basil/70 hover:text-basil"
+          className="inline-block font-body text-sm text-fog hover:text-snow"
         >
           ← Back
         </Link>
@@ -21,10 +21,10 @@ export default function RequestAccessPage() {
             height={120}
             className="h-14 w-auto mx-auto"
           />
-          <h1 className="font-display text-3xl text-basil">
+          <h1 className="font-display text-3xl text-snow">
             Request access to <em className="italic">GreatFind</em>
           </h1>
-          <p className="font-display italic text-base text-basil/70">
+          <p className="font-display text-base text-fog">
             GreatFind is currently invite-only. Tell Jo who you are, and
             she&apos;ll be in touch.
           </p>
@@ -32,9 +32,9 @@ export default function RequestAccessPage() {
 
         <RequestAccessForm />
 
-        <p className="text-center font-body text-sm text-basil/60">
+        <p className="text-center font-body text-sm text-fog">
           Already have an account?{" "}
-          <Link href="/login" className="text-basil hover:underline">
+          <Link href="/login" className="text-snow hover:underline">
             Log in
           </Link>
         </p>
