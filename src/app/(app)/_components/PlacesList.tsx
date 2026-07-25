@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import {
   STATUS_META,
   initials,
+  placePhotoUrl,
   priceLabel,
+  type Folder,
   type Restaurant,
   type RestaurantStatus,
 } from "@/lib/types";
@@ -16,12 +18,15 @@ type Filter = "all" | RestaurantStatus;
 export function PlacesList({
   restaurants,
   names,
+  folders,
 }: {
   restaurants: Restaurant[];
   names: Record<string, string>;
+  folders: Folder[];
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
+  const [folderId, setFolderId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   const counts = useMemo(() => {
@@ -46,12 +51,13 @@ export function PlacesList({
     const q = query.trim().toLowerCase();
     return restaurants.filter((r) => {
       if (filter !== "all" && r.status !== filter) return false;
+      if (folderId !== null && r.folder_id !== folderId) return false;
       if (!q) return true;
       return [r.name, r.cuisine, r.area, r.city, r.recommended_by, r.notes]
         .filter(Boolean)
         .some((f) => (f as string).toLowerCase().includes(q));
     });
-  }, [restaurants, filter, query]);
+  }, [restaurants, filter, folderId, query]);
 
   if (restaurants.length === 0) {
     return (
@@ -101,6 +107,36 @@ export function PlacesList({
         </button>
       </div>
 
+      {/* Folders */}
+      {folders.length > 0 ? (
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-6 px-6">
+          <button
+            onClick={() => setFolderId(null)}
+            className={
+              folderId === null
+                ? "shrink-0 h-8 rounded-lg bg-lilac text-ink px-3.5 text-[13px] font-semibold flex items-center whitespace-nowrap"
+                : "shrink-0 h-8 rounded-lg bg-card border border-line text-mist px-3.5 text-[13px] font-medium flex items-center whitespace-nowrap"
+            }
+          >
+            📁 All folders
+          </button>
+          {folders.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFolderId(folderId === f.id ? null : f.id)}
+              className={
+                folderId === f.id
+                  ? "shrink-0 h-8 rounded-lg bg-lilac text-ink px-3.5 text-[13px] font-semibold flex items-center whitespace-nowrap"
+                  : "shrink-0 h-8 rounded-lg bg-card border border-line text-mist px-3.5 text-[13px] font-medium flex items-center whitespace-nowrap"
+              }
+            >
+              {f.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Status filters */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-6 px-6">
         {FILTERS.map((f) => (
           <button
@@ -125,24 +161,39 @@ export function PlacesList({
             : r.created_by
               ? names[r.created_by]
               : null;
+          const thumb =
+            r.photos && r.photos[0] ? placePhotoUrl(r.photos[0], 200) : null;
           return (
             <li key={r.id}>
               <Link
                 href={`/place/${r.id}`}
                 className="flex items-center gap-3.5 rounded-xl bg-card border border-line p-3.5 hover:border-coral/60 transition-colors"
               >
-                <div
-                  className="w-[54px] h-[54px] rounded-lg flex items-center justify-center text-lg font-semibold shrink-0"
-                  style={{ backgroundColor: `${meta.pin}22`, color: meta.pin }}
-                >
-                  {r.name.charAt(0).toUpperCase()}
-                </div>
+                {thumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={thumb}
+                    alt=""
+                    className="w-[54px] h-[54px] rounded-lg object-cover shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="w-[54px] h-[54px] rounded-lg flex items-center justify-center text-lg font-semibold shrink-0"
+                    style={{ backgroundColor: `${meta.pin}22`, color: meta.pin }}
+                  >
+                    {r.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="flex-1 flex flex-col gap-[3px] min-w-0">
                   <span className="text-base font-semibold text-white truncate">
                     {r.name}
                   </span>
                   <span className="text-[13px] text-fog truncate">
-                    {[r.cuisine, r.area ?? r.city, priceLabel(r.price_level)]
+                    {[
+                      r.cuisine,
+                      r.area ?? r.city,
+                      r.price_range ?? priceLabel(r.price_level),
+                    ]
                       .filter(Boolean)
                       .join(" · ")}
                   </span>

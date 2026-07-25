@@ -1,18 +1,25 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { initials, type Profile, type Restaurant } from "@/lib/types";
+import {
+  initials,
+  type Folder,
+  type Profile,
+  type Restaurant,
+} from "@/lib/types";
 import { PlacesList } from "./_components/PlacesList";
 
 export default async function HomePage() {
   const supabase = await createClient();
 
-  const [{ data: restaurants }, { data: profiles }, userRes] =
+  const [{ data: restaurants }, { data: profiles }, { data: folders }, userRes] =
     await Promise.all([
       supabase
         .from("restaurants")
         .select("*")
         .order("created_at", { ascending: false }),
       supabase.from("profiles").select("user_id, display_name"),
+      // Defensive: pre-migration this table may not exist; error → [].
+      supabase.from("folders").select("id, name").order("name"),
       supabase.auth.getUser(),
     ]);
 
@@ -57,6 +64,7 @@ export default async function HomePage() {
       <PlacesList
         restaurants={(restaurants ?? []) as Restaurant[]}
         names={names}
+        folders={(folders ?? []) as Folder[]}
       />
     </main>
   );

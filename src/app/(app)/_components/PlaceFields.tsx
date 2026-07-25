@@ -1,6 +1,8 @@
 "use client";
 
-import type { RestaurantStatus } from "@/lib/types";
+import { useState } from "react";
+import type { Folder, RestaurantStatus } from "@/lib/types";
+import { createFolder } from "../actions";
 
 /** The editable fields shared by the Add and Edit forms. */
 export type PlaceDraft = {
@@ -9,6 +11,7 @@ export type PlaceDraft = {
   area: string;
   city: string;
   price_level: number | null;
+  price_range: string | null;
   status: RestaurantStatus;
   recommended_by: string;
   notes: string;
@@ -18,6 +21,8 @@ export type PlaceDraft = {
   address: string | null;
   lat: number | null;
   lng: number | null;
+  photos: string[] | null;
+  folder_id: string | null;
 };
 
 export const EMPTY_DRAFT: PlaceDraft = {
@@ -26,6 +31,7 @@ export const EMPTY_DRAFT: PlaceDraft = {
   area: "",
   city: "",
   price_level: null,
+  price_range: null,
   status: "want_to_try",
   recommended_by: "",
   notes: "",
@@ -35,6 +41,8 @@ export const EMPTY_DRAFT: PlaceDraft = {
   address: null,
   lat: null,
   lng: null,
+  photos: null,
+  folder_id: null,
 };
 
 const STATUS_OPTIONS: Array<{ key: RestaurantStatus; label: string }> = [
@@ -44,18 +52,41 @@ const STATUS_OPTIONS: Array<{ key: RestaurantStatus; label: string }> = [
 ];
 
 const inputCls =
-  "w-full rounded-lg bg-card px-4 py-3 font-body text-sm text-snow placeholder:text-fog/70 focus:outline-none focus:bg-card";
-const labelCls =
-  "block font-body text-xs text-fog tracking-wide uppercase";
+  "w-full rounded-lg bg-card border border-line px-4 py-3 font-body text-sm text-snow placeholder:text-fog/70 focus:outline-none focus:border-coral/60";
+const labelCls = "block font-body text-xs text-fog tracking-wide uppercase";
 
 export function PlaceFields({
   draft,
   onChange,
+  folders,
 }: {
   draft: PlaceDraft;
   onChange: (next: PlaceDraft) => void;
+  folders: Folder[];
 }) {
   const set = (patch: Partial<PlaceDraft>) => onChange({ ...draft, ...patch });
+  const [localFolders, setLocalFolders] = useState<Folder[]>(folders);
+  const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [folderBusy, setFolderBusy] = useState(false);
+  const [folderError, setFolderError] = useState<string | null>(null);
+
+  async function addFolder() {
+    if (!newFolderName.trim()) return;
+    setFolderBusy(true);
+    setFolderError(null);
+    const result = await createFolder(newFolderName);
+    setFolderBusy(false);
+    if (!result.success || !result.folderId) {
+      setFolderError(result.error ?? "Couldn't create folder.");
+      return;
+    }
+    const folder = { id: result.folderId, name: newFolderName.trim() };
+    setLocalFolders((f) => [...f, folder]);
+    set({ folder_id: folder.id });
+    setNewFolderName("");
+    setNewFolderOpen(false);
+  }
 
   return (
     <div className="space-y-4">
@@ -87,14 +118,74 @@ export function PlaceFields({
               onClick={() => set({ status: s.key })}
               className={
                 draft.status === s.key
-                  ? "flex-1 rounded-full bg-coral text-ink px-3 py-2 font-body text-xs font-medium"
-                  : "flex-1 rounded-full bg-card text-fog px-3 py-2 font-body text-xs"
+                  ? "flex-1 rounded-lg bg-coral text-ink px-3 py-2 font-body text-xs font-semibold"
+                  : "flex-1 rounded-lg bg-card border border-line text-mist px-3 py-2 font-body text-xs"
               }
             >
               {s.label}
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Folder */}
+      <div className="space-y-1.5">
+        <span className={labelCls}>Folder</span>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => set({ folder_id: null })}
+            className={
+              draft.folder_id === null
+                ? "rounded-lg bg-coral text-ink px-3 py-1.5 font-body text-xs font-semibold"
+                : "rounded-lg bg-card border border-line text-mist px-3 py-1.5 font-body text-xs"
+            }
+          >
+            None
+          </button>
+          {localFolders.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => set({ folder_id: f.id })}
+              className={
+                draft.folder_id === f.id
+                  ? "rounded-lg bg-coral text-ink px-3 py-1.5 font-body text-xs font-semibold"
+                  : "rounded-lg bg-card border border-line text-mist px-3 py-1.5 font-body text-xs"
+              }
+            >
+              {f.name}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setNewFolderOpen((v) => !v)}
+            className="rounded-lg bg-card border border-dashed border-line text-fog px-3 py-1.5 font-body text-xs"
+          >
+            + New folder
+          </button>
+        </div>
+        {newFolderOpen ? (
+          <div className="flex gap-2 pt-1">
+            <input
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="Folder name"
+              className="flex-1 rounded-lg bg-card border border-line px-3 py-2 font-body text-xs text-snow placeholder:text-fog/70 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={addFolder}
+              disabled={folderBusy || !newFolderName.trim()}
+              className="rounded-lg bg-coral text-ink px-4 py-2 font-body text-xs font-semibold disabled:opacity-40"
+            >
+              {folderBusy ? "…" : "Create"}
+            </button>
+          </div>
+        ) : null}
+        {folderError ? (
+          <p className="font-body text-xs text-coral">{folderError}</p>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -149,8 +240,8 @@ export function PlaceFields({
                 }
                 className={
                   draft.price_level != null && p <= draft.price_level
-                    ? "flex-1 rounded-xl bg-coral text-ink py-3 font-body text-xs font-medium"
-                    : "flex-1 rounded-xl bg-card text-fog/80 py-3 font-body text-xs"
+                    ? "flex-1 rounded-lg bg-coral text-ink py-3 font-body text-xs font-semibold"
+                    : "flex-1 rounded-lg bg-card border border-line text-fog py-3 font-body text-xs"
                 }
               >
                 $

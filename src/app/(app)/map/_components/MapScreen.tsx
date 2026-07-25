@@ -10,6 +10,7 @@ import {
 import {
   STATUS_META,
   initials,
+  placePhotoUrl,
   priceLabel,
   type Restaurant,
   type RestaurantStatus,
@@ -163,12 +164,21 @@ export function MapScreen({ restaurants }: { restaurants: Restaurant[] }) {
       {/* Selected place sheet, per the design */}
       {open && openMeta ? (
         <div className="absolute left-4 right-4 bottom-4 max-w-sm mx-auto rounded-xl bg-ink border border-line p-4 shadow-[0_18px_44px_rgba(0,0,0,0.55)] flex gap-3.5 items-center">
-          <div
-            className="w-[64px] h-[64px] rounded-lg flex items-center justify-center text-2xl font-semibold shrink-0"
-            style={{ backgroundColor: `${openMeta.pin}22`, color: openMeta.pin }}
-          >
-            {open.name.charAt(0).toUpperCase()}
-          </div>
+          {open.photos?.[0] && placePhotoUrl(open.photos[0], 200) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={placePhotoUrl(open.photos[0], 200) as string}
+              alt=""
+              className="w-[64px] h-[64px] rounded-lg object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className="w-[64px] h-[64px] rounded-lg flex items-center justify-center text-2xl font-semibold shrink-0"
+              style={{ backgroundColor: `${openMeta.pin}22`, color: openMeta.pin }}
+            >
+              {open.name.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="flex-1 flex flex-col gap-[3px] min-w-0">
             <span className="text-[17px] font-semibold text-white truncate">
               {open.name}
@@ -177,7 +187,7 @@ export function MapScreen({ restaurants }: { restaurants: Restaurant[] }) {
               {[
                 open.area ?? open.city,
                 open.cuisine,
-                priceLabel(open.price_level),
+                open.price_range ?? priceLabel(open.price_level),
               ]
                 .filter(Boolean)
                 .join(" · ")}

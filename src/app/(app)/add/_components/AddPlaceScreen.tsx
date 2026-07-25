@@ -9,8 +9,9 @@ import {
   type PlaceDraft,
 } from "../../_components/PlaceFields";
 import { PlaceLookup, type LookupResult } from "./PlaceLookup";
+import { placePhotoUrl, type Folder } from "@/lib/types";
 
-export function AddPlaceScreen() {
+export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
   const router = useRouter();
   const [draft, setDraft] = useState<PlaceDraft>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
@@ -25,12 +26,14 @@ export function AddPlaceScreen() {
       area: r.area ?? d.area,
       city: r.city ?? d.city,
       price_level: r.price_level ?? d.price_level,
+      price_range: r.price_range ?? d.price_range,
       link: d.link || (r.website ?? ""),
       google_place_id: r.google_place_id,
       google_maps_url: r.google_maps_url,
       address: r.address,
       lat: r.lat,
       lng: r.lng,
+      photos: r.photos.length > 0 ? r.photos : d.photos,
     }));
     setLookedUp(true);
   }
@@ -56,20 +59,37 @@ export function AddPlaceScreen() {
     router.refresh();
   }
 
+  const heroUrl =
+    draft.photos && draft.photos[0]
+      ? placePhotoUrl(draft.photos[0], 800)
+      : null;
+
   return (
-    <main className="max-w-sm mx-auto px-4 pt-6 space-y-5">
+    <main className="max-w-sm mx-auto px-6 pt-6 space-y-5">
       <header>
-        <h1 className="font-display text-3xl text-snow">Add a place</h1>
-        <p className="font-display text-sm text-fog">
-          Search Google first — it fills everything in.
+        <h1 className="text-[26px] font-semibold text-white tracking-[-0.01em]">
+          Add a place
+        </h1>
+        <p className="text-sm text-fog">
+          Search Google first — it fills everything in, photos included.
         </p>
       </header>
 
       <PlaceLookup onSelect={applyLookup} />
 
+      {heroUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={heroUrl}
+          alt={draft.name}
+          className="w-full h-40 object-cover rounded-xl border border-line"
+        />
+      ) : null}
+
       {lookedUp ? (
         <p className="font-body text-xs text-warm">
-          ✓ Found it — details filled in below. Adjust anything, then save.
+          ✓ Found it — details{draft.photos?.length ? " and photos" : ""}{" "}
+          filled in below. Adjust anything, then save.
         </p>
       ) : null}
 
@@ -80,7 +100,7 @@ export function AddPlaceScreen() {
         }}
         className="space-y-5"
       >
-        <PlaceFields draft={draft} onChange={setDraft} />
+        <PlaceFields draft={draft} onChange={setDraft} folders={folders} />
 
         {error ? (
           <p className="font-body text-sm text-coral text-center">{error}</p>
@@ -89,7 +109,7 @@ export function AddPlaceScreen() {
         <button
           type="submit"
           disabled={saving || !draft.name.trim()}
-          className="w-full bg-coral text-ink rounded-lg py-3 font-body font-medium hover:opacity-90 disabled:opacity-40"
+          className="w-full bg-coral text-ink rounded-lg py-3 font-body font-semibold hover:opacity-90 disabled:opacity-40 shadow-[0_8px_20px_rgba(234,124,105,0.3)]"
         >
           {saving ? "Saving…" : "Save place"}
         </button>

@@ -11,6 +11,7 @@ export type RestaurantInput = {
   area?: string | null;
   city?: string | null;
   price_level?: number | null;
+  price_range?: string | null;
   status: RestaurantStatus;
   recommended_by?: string | null;
   notes?: string | null;
@@ -20,6 +21,8 @@ export type RestaurantInput = {
   address?: string | null;
   lat?: number | null;
   lng?: number | null;
+  photos?: string[] | null;
+  folder_id?: string | null;
 };
 
 type Result = { success: boolean; error?: string; id?: string };
@@ -34,12 +37,16 @@ function clean(input: RestaurantInput): RestaurantInput | { error: string } {
     input.price_level && input.price_level >= 1 && input.price_level <= 4
       ? Math.round(input.price_level)
       : null;
+  const photos = Array.isArray(input.photos)
+    ? input.photos.filter((p) => typeof p === "string" && p).slice(0, 8)
+    : null;
   return {
     name,
     cuisine: input.cuisine?.trim() || null,
     area: input.area?.trim() || null,
     city: input.city?.trim() || null,
     price_level: price,
+    price_range: input.price_range?.trim() || null,
     status: input.status,
     recommended_by: input.recommended_by?.trim() || null,
     notes: input.notes?.trim() || null,
@@ -49,10 +56,14 @@ function clean(input: RestaurantInput): RestaurantInput | { error: string } {
     address: input.address?.trim() || null,
     lat: typeof input.lat === "number" ? input.lat : null,
     lng: typeof input.lng === "number" ? input.lng : null,
+    photos: photos && photos.length > 0 ? photos : null,
+    folder_id: input.folder_id || null,
   };
 }
 
-export async function createRestaurant(input: RestaurantInput): Promise<Result> {
+export async function createRestaurant(
+  input: RestaurantInput,
+): Promise<Result> {
   const cleaned = clean(input);
   if ("error" in cleaned) return { success: false, error: cleaned.error };
 
@@ -98,6 +109,37 @@ export async function updateRestaurant(
   return { success: true, id };
 }
 
+/** Save photos + price range fetched client-side from Google Places
+ *  (used by the "Fetch photos" backfill on the detail page). */
+export async function savePlaceMedia(
+  id: string,
+  photos: string[],
+  priceRange: string | null,
+): Promise<Result> {
+  if (!id) return { success: false, error: "Missing id." };
+  const cleanedPhotos = (photos ?? [])
+    .filter((p) => typeof p === "string" && p)
+    .slice(0, 8);
+
+  const supabase = await createClient();
+  const patch: { photos?: string[]; price_range?: string } = {};
+  if (cleanedPhotos.length > 0) patch.photos = cleanedPhotos;
+  if (priceRange?.trim()) patch.price_range = priceRange.trim();
+  if (Object.keys(patch).length === 0) {
+    return { success: false, error: "Google had no photos for this place." };
+  }
+
+  const { error } = await supabase
+    .from("restaurants")
+    .update(patch)
+    .eq("id", id);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/");
+  revalidatePath(`/place/${id}`);
+  return { success: true, id };
+}
+
 export async function setRestaurantStatus(
   id: string,
   status: RestaurantStatus,
@@ -127,4 +169,41 @@ export async function deleteRestaurant(id: string): Promise<never> {
     revalidatePath("/map");
   }
   redirect("/");
+}
+
+// ---------------------------------------------------------------------
+// Folders
+// ---------------------------------------------------------------------
+
+export async function createFolder(
+  name: string,
+): Promise<Result & { folderId?: string }> {
+  const trimmed = name?.trim();
+  if (!trimmed) return { success: false, error: "Give the folder a name." };
+  if (trimmed.length > 40) {
+    return { success: false, error: "Keep folder names under 40 characters." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not signed in." };
+
+  const { data, error } = await supabase
+    .from("folders")
+    .insert({ name: trimmed, created_by: user.id })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      return { success: false, error: "A folder with that name exists." };
+    }
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/add");
+  return { success: true, folderId: data.id };
 }

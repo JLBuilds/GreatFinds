@@ -12,10 +12,12 @@ export type LookupResult = {
   google_place_id: string | null;
   google_maps_url: string | null;
   price_level: number | null;
+  price_range: string | null;
   cuisine: string | null;
   area: string | null;
   city: string | null;
   website: string | null;
+  photos: string[];
 };
 
 const PRICE_MAP: Record<string, number> = {
@@ -42,6 +44,28 @@ function componentText(
 ): string | null {
   const c = components?.find((c) => c.types.includes(type));
   return c?.longText ?? null;
+}
+
+/* Shared across Add-form lookup and the detail-page photo backfill. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function extractPriceRange(j: any): string | null {
+  const pr = j?.priceRange;
+  if (!pr?.startPrice) return null;
+  const cur = pr.startPrice.currencyCode ?? "";
+  const start = pr.startPrice.units ?? "";
+  const end = pr.endPrice?.units ?? "";
+  if (!start) return null;
+  return end ? `${cur} ${start}–${end}`.trim() : `${cur} ${start}+`.trim();
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function extractPhotoNames(j: any): string[] {
+  if (!Array.isArray(j?.photos)) return [];
+  return j.photos
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((p: any) => p?.name ?? p?.Eg ?? null)
+    .filter((n: unknown): n is string => typeof n === "string" && n.length > 0)
+    .slice(0, 8);
 }
 
 function AutocompleteInner({
@@ -77,9 +101,11 @@ function AutocompleteInner({
             "location",
             "googleMapsURI",
             "priceLevel",
+            "priceRange",
             "types",
             "websiteURI",
             "addressComponents",
+            "photos",
           ],
         });
         const j = place.toJSON();
@@ -91,12 +117,14 @@ function AutocompleteInner({
           google_place_id: j.id ?? null,
           google_maps_url: j.googleMapsURI ?? null,
           price_level: j.priceLevel ? (PRICE_MAP[j.priceLevel] ?? null) : null,
+          price_range: extractPriceRange(j),
           cuisine: cuisineFromTypes(j.types),
           area:
             componentText(j.addressComponents, "sublocality") ??
             componentText(j.addressComponents, "neighborhood"),
           city: componentText(j.addressComponents, "locality"),
           website: j.websiteURI ?? null,
+          photos: extractPhotoNames(j),
         });
       } catch (err) {
         console.error("[PlaceLookup] fetchFields failed:", err);
