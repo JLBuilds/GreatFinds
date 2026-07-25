@@ -58,6 +58,12 @@ export function PlacesList({
   const folderCount = (id: string) =>
     restaurants.filter((r) => r.folder_id === id).length;
 
+  const folderNameById = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const f of localFolders) m[f.id] = f.name;
+    return m;
+  }, [localFolders]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return restaurants.filter((r) => {
@@ -221,6 +227,12 @@ export function PlacesList({
               : null;
           const thumb =
             r.photos && r.photos[0] ? placePhotoUrl(r.photos[0], 400) : null;
+          // Badge shows the folder name when filed, else the status.
+          const folderName = r.folder_id
+            ? folderNameById[r.folder_id]
+            : null;
+          const tagLabel = folderName ?? meta.label;
+          const tagColor = folderName ? "#9288E0" : meta.pin;
           return (
             <Link
               key={r.id}
@@ -247,13 +259,13 @@ export function PlacesList({
                   </div>
                 )}
                 <span
-                  className="absolute left-2 top-2 h-5 rounded-md px-1.5 text-[10px] font-semibold uppercase tracking-[0.05em] flex items-center"
+                  className="absolute left-2 top-2 max-w-[calc(100%-16px)] h-5 rounded-md px-1.5 text-[10px] font-semibold uppercase tracking-[0.05em] flex items-center truncate"
                   style={{
                     backgroundColor: "rgba(31,29,43,0.85)",
-                    color: meta.pin,
+                    color: tagColor,
                   }}
                 >
-                  {meta.label}
+                  {tagLabel}
                 </span>
               </div>
               <div className="flex flex-col gap-1 p-3">
