@@ -63,7 +63,6 @@ export default async function HomePage() {
 
       <PlacesList
         restaurants={(restaurants ?? []) as Restaurant[]}
-        names={names}
         folders={(folders ?? []) as Folder[]}
       />
     </main>

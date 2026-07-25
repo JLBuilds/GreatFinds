@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createFolder, setRestaurantFolder } from "../actions";
+import { GoogleFallbackSearch } from "./GoogleFallbackSearch";
 import {
   STATUS_META,
   extractUrl,
@@ -20,11 +21,9 @@ type Filter = "all" | RestaurantStatus;
 
 export function PlacesList({
   restaurants,
-  names,
   folders,
 }: {
   restaurants: Restaurant[];
-  names: Record<string, string>;
   folders: Folder[];
 }) {
   const router = useRouter();
@@ -255,11 +254,9 @@ export function PlacesList({
       <div className="grid grid-cols-2 gap-3">
         {filtered.map((r) => {
           const meta = STATUS_META[r.status];
-          const who = r.recommended_by
-            ? r.recommended_by
-            : r.created_by
-              ? names[r.created_by]
-              : null;
+          // Attribution shows only who recommended it (no "added by" —
+          // the owner adds everything).
+          const who = r.recommended_by;
           const thumb =
             r.photos && r.photos[0] ? placePhotoUrl(r.photos[0], 400) : null;
           // Badge shows the folder name when filed, else the status.
@@ -361,8 +358,13 @@ export function PlacesList({
         })}
       </div>
       {filtered.length === 0 ? (
-        <div className="rounded-xl bg-card/60 border border-line p-6 text-center text-sm text-fog">
-          Nothing here yet — try a different folder or filter.
+        <div className="rounded-xl bg-card/60 border border-line p-6 text-center space-y-3">
+          <p className="text-sm text-fog">
+            {query.trim()
+              ? `Nothing saved matches “${query.trim()}”.`
+              : "Nothing here yet — try a different folder or filter."}
+          </p>
+          {query.trim() ? <GoogleFallbackSearch query={query.trim()} /> : null}
         </div>
       ) : null}
 

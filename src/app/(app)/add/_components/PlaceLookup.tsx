@@ -68,6 +68,29 @@ export function extractPhotoNames(j: any): string[] {
     .slice(0, 8);
 }
 
+/** Convert a Google Place JSON (from toJSON()) into our LookupResult.
+ *  Shared by the autocomplete widget and the home-screen fallback search. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function placeJsonToLookup(j: any): LookupResult {
+  return {
+    name: j.displayName ?? "",
+    address: j.formattedAddress ?? null,
+    lat: j.location?.lat ?? null,
+    lng: j.location?.lng ?? null,
+    google_place_id: j.id ?? null,
+    google_maps_url: j.googleMapsURI ?? null,
+    price_level: j.priceLevel ? (PRICE_MAP[j.priceLevel] ?? null) : null,
+    price_range: extractPriceRange(j),
+    cuisine: cuisineFromTypes(j.types),
+    area:
+      componentText(j.addressComponents, "sublocality") ??
+      componentText(j.addressComponents, "neighborhood"),
+    city: componentText(j.addressComponents, "locality"),
+    website: j.websiteURI ?? null,
+    photos: extractPhotoNames(j),
+  };
+}
+
 function AutocompleteInner({
   onSelect,
 }: {
@@ -109,23 +132,7 @@ function AutocompleteInner({
           ],
         });
         const j = place.toJSON();
-        onSelectRef.current({
-          name: j.displayName ?? "",
-          address: j.formattedAddress ?? null,
-          lat: j.location?.lat ?? null,
-          lng: j.location?.lng ?? null,
-          google_place_id: j.id ?? null,
-          google_maps_url: j.googleMapsURI ?? null,
-          price_level: j.priceLevel ? (PRICE_MAP[j.priceLevel] ?? null) : null,
-          price_range: extractPriceRange(j),
-          cuisine: cuisineFromTypes(j.types),
-          area:
-            componentText(j.addressComponents, "sublocality") ??
-            componentText(j.addressComponents, "neighborhood"),
-          city: componentText(j.addressComponents, "locality"),
-          website: j.websiteURI ?? null,
-          photos: extractPhotoNames(j),
-        });
+        onSelectRef.current(placeJsonToLookup(j));
       } catch (err) {
         console.error("[PlaceLookup] fetchFields failed:", err);
       }

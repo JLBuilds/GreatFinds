@@ -70,12 +70,10 @@ const STATUS_ORDER: RestaurantStatus[] = ["want_to_try", "been", "favorite"];
 
 export function PlaceDetail({
   restaurant,
-  addedBy,
   isOwner,
   folders,
 }: {
   restaurant: Restaurant;
-  addedBy: string | null;
   isOwner: boolean;
   folders: Folder[];
 }) {
@@ -248,13 +246,9 @@ export function PlaceDetail({
           />
         ) : null}
 
-        {restaurant.recommended_by || addedBy ? (
+        {restaurant.recommended_by ? (
           <p className="font-body text-sm text-mist break-words">
-            {restaurant.recommended_by ? (
-              <>Recommended by {withLinks(restaurant.recommended_by)}</>
-            ) : null}
-            {restaurant.recommended_by && addedBy ? " · " : null}
-            {addedBy ? `added by ${addedBy}` : null}
+            Recommended by {withLinks(restaurant.recommended_by)}
           </p>
         ) : null}
 
