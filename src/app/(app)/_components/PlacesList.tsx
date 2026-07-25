@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createFolder } from "../actions";
+import { createFolder, setRestaurantFolder } from "../actions";
 import {
   STATUS_META,
   extractUrl,
@@ -36,6 +36,11 @@ export function PlacesList({
   const [newFolderName, setNewFolderName] = useState("");
   const [folderBusy, setFolderBusy] = useState(false);
   const [folderError, setFolderError] = useState<string | null>(null);
+  // Home-screen "move to folder" sheet
+  const [moveTarget, setMoveTarget] = useState<Restaurant | null>(null);
+  const [moveBusy, setMoveBusy] = useState(false);
+  const [moveNewOpen, setMoveNewOpen] = useState(false);
+  const [moveNewName, setMoveNewName] = useState("");
 
   const counts = useMemo(() => {
     const c: Record<Filter, number> = {
@@ -93,6 +98,36 @@ export function PlacesList({
     setNewFolderName("");
     setNewFolderOpen(false);
     setFolderId(folder.id);
+    router.refresh();
+  }
+
+  async function doMove(r: Restaurant, folderId: string | null) {
+    setMoveBusy(true);
+    const result = await setRestaurantFolder(r.id, folderId);
+    setMoveBusy(false);
+    if (result.success) {
+      setMoveTarget(null);
+      setMoveNewOpen(false);
+      setMoveNewName("");
+      router.refresh();
+    }
+  }
+
+  async function moveToNewFolder(r: Restaurant) {
+    if (!moveNewName.trim()) return;
+    setMoveBusy(true);
+    const created = await createFolder(moveNewName);
+    if (!created.success || !created.folderId) {
+      setMoveBusy(false);
+      return;
+    }
+    const folder = { id: created.folderId, name: moveNewName.trim() };
+    setLocalFolders((f) => [...f, folder]);
+    await setRestaurantFolder(r.id, folder.id);
+    setMoveBusy(false);
+    setMoveTarget(null);
+    setMoveNewOpen(false);
+    setMoveNewName("");
     router.refresh();
   }
 
@@ -234,8 +269,8 @@ export function PlacesList({
           const tagLabel = folderName ?? meta.label;
           const tagColor = folderName ? "#9288E0" : meta.pin;
           return (
+            <div key={r.id} className="relative">
             <Link
-              key={r.id}
               href={`/place/${r.id}`}
               className="rounded-xl bg-card border border-line overflow-hidden flex flex-col hover:border-coral/60 transition-colors"
             >
@@ -302,12 +337,108 @@ export function PlacesList({
                 ) : null}
               </div>
             </Link>
+            {/* Categorise from the home screen */}
+            <button
+              onClick={() => {
+                setMoveNewOpen(false);
+                setMoveNewName("");
+                setMoveTarget(r);
+              }}
+              aria-label="Move to folder"
+              className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-ink/85 border border-line flex items-center justify-center text-mist hover:text-coral"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M3 7a2 2 0 0 1 2-2h3.6l1.8 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            </div>
           );
         })}
       </div>
       {filtered.length === 0 ? (
         <div className="rounded-xl bg-card/60 border border-line p-6 text-center text-sm text-fog">
           Nothing here yet — try a different folder or filter.
+        </div>
+      ) : null}
+
+      {/* Move-to-folder sheet */}
+      {moveTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-night/70"
+          onClick={() => setMoveTarget(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-ink border-t border-line rounded-t-2xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[15px] font-semibold text-white">
+              Move “{moveTarget.name}” to…
+            </p>
+            <div className="flex flex-col gap-2 max-h-[45vh] overflow-y-auto">
+              <button
+                onClick={() => doMove(moveTarget, null)}
+                disabled={moveBusy}
+                className={
+                  moveTarget.folder_id === null
+                    ? "text-left rounded-lg bg-lilac text-ink px-4 py-2.5 text-sm font-semibold"
+                    : "text-left rounded-lg bg-card border border-line text-mist px-4 py-2.5 text-sm"
+                }
+              >
+                No folder
+              </button>
+              {localFolders.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => doMove(moveTarget, f.id)}
+                  disabled={moveBusy}
+                  className={
+                    moveTarget.folder_id === f.id
+                      ? "text-left rounded-lg bg-lilac text-ink px-4 py-2.5 text-sm font-semibold"
+                      : "text-left rounded-lg bg-card border border-line text-mist px-4 py-2.5 text-sm"
+                  }
+                >
+                  {f.name}
+                </button>
+              ))}
+            </div>
+
+            {moveNewOpen ? (
+              <div className="flex gap-2">
+                <input
+                  value={moveNewName}
+                  onChange={(e) => setMoveNewName(e.target.value)}
+                  placeholder="Folder name"
+                  className="flex-1 rounded-lg bg-card border border-line px-3 py-2 text-sm text-snow placeholder:text-fog/70 focus:outline-none"
+                />
+                <button
+                  onClick={() => moveToNewFolder(moveTarget)}
+                  disabled={moveBusy || !moveNewName.trim()}
+                  className="rounded-lg bg-coral text-ink px-4 py-2 text-sm font-semibold disabled:opacity-40"
+                >
+                  {moveBusy ? "…" : "Create"}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setMoveNewOpen(true)}
+                className="w-full rounded-lg bg-card border border-dashed border-line text-fog px-4 py-2.5 text-sm"
+              >
+                + New folder
+              </button>
+            )}
+
+            <button
+              onClick={() => setMoveTarget(null)}
+              className="w-full text-fog text-sm py-2"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       ) : null}
     </div>
