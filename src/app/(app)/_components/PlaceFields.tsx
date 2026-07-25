@@ -1,11 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { PRICE_BANDS, type Folder, type RestaurantStatus } from "@/lib/types";
+import {
+  LISTING_TYPES,
+  bandRange,
+  priceBands,
+  type Folder,
+  type ListingType,
+  type RestaurantStatus,
+} from "@/lib/types";
 import { createFolder } from "../actions";
 
 /** The editable fields shared by the Add and Edit forms. */
 export type PlaceDraft = {
+  type: ListingType;
   name: string;
   cuisine: string;
   area: string;
@@ -26,6 +34,7 @@ export type PlaceDraft = {
 };
 
 export const EMPTY_DRAFT: PlaceDraft = {
+  type: "restaurant",
   name: "",
   cuisine: "",
   area: "",
@@ -90,6 +99,35 @@ export function PlaceFields({
 
   return (
     <div className="space-y-4">
+      <div className="space-y-1">
+        <span className={labelCls}>Type</span>
+        <div className="flex gap-2">
+          {LISTING_TYPES.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() =>
+                set({
+                  type: t.key,
+                  // Keep the chosen level but relabel its range for the
+                  // new type's scale.
+                  price_range: draft.price_level
+                    ? bandRange(draft.price_level, t.key)
+                    : draft.price_range,
+                })
+              }
+              className={
+                draft.type === t.key
+                  ? "flex-1 rounded-lg bg-coral text-ink px-3 py-2 font-body text-xs font-semibold"
+                  : "flex-1 rounded-lg bg-card border border-line text-mist px-3 py-2 font-body text-xs"
+              }
+            >
+              {t.emoji} {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="space-y-1">
         <label htmlFor="pf-name" className={labelCls}>
           Name
@@ -191,13 +229,15 @@ export function PlaceFields({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label htmlFor="pf-cuisine" className={labelCls}>
-            Cuisine
+            {draft.type === "experience" ? "Category" : "Cuisine"}
           </label>
           <input
             id="pf-cuisine"
             value={draft.cuisine}
             onChange={(e) => set({ cuisine: e.target.value })}
-            placeholder="Lebanese"
+            placeholder={
+              draft.type === "experience" ? "Desert safari" : "Lebanese"
+            }
             className={inputCls}
           />
         </div>
@@ -231,7 +271,7 @@ export function PlaceFields({
       <div className="space-y-1.5">
         <span className={labelCls}>Price</span>
         <div className="grid grid-cols-2 gap-2">
-          {PRICE_BANDS.map((b) => {
+          {priceBands(draft.type).map((b) => {
             const active = draft.price_level === b.level;
             return (
               <button

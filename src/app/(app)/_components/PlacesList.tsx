@@ -29,6 +29,9 @@ export function PlacesList({
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "restaurant" | "experience">(
+    "all",
+  );
   const [folderId, setFolderId] = useState<string | null | "none">(null);
   const [priceFilter, setPriceFilter] = useState<number | null>(null);
   const [query, setQuery] = useState("");
@@ -78,6 +81,8 @@ export function PlacesList({
     const q = query.trim().toLowerCase();
     return restaurants.filter((r) => {
       if (filter !== "all" && r.status !== filter) return false;
+      if (typeFilter !== "all" && (r.type ?? "restaurant") !== typeFilter)
+        return false;
       if (folderId === "none" && r.folder_id !== null) return false;
       if (folderId !== null && folderId !== "none" && r.folder_id !== folderId)
         return false;
@@ -87,7 +92,17 @@ export function PlacesList({
         .filter(Boolean)
         .some((f) => (f as string).toLowerCase().includes(q));
     });
-  }, [restaurants, filter, folderId, priceFilter, query]);
+  }, [restaurants, filter, typeFilter, folderId, priceFilter, query]);
+
+  const typeCounts = useMemo(() => {
+    let restaurant = 0;
+    let experience = 0;
+    for (const r of restaurants) {
+      if ((r.type ?? "restaurant") === "experience") experience++;
+      else restaurant++;
+    }
+    return { restaurant, experience };
+  }, [restaurants]);
 
   const selectedRestaurants = restaurants.filter((r) => selectedIds.has(r.id));
 
@@ -201,6 +216,31 @@ export function PlacesList({
           </svg>
         </button>
       </div>
+
+      {/* Type filter — only shown once experiences exist */}
+      {typeCounts.experience > 0 ? (
+        <div className="flex gap-2">
+          {(
+            [
+              { key: "all", label: "Everything" },
+              { key: "restaurant", label: `🍽 Restaurants ${typeCounts.restaurant}` },
+              { key: "experience", label: `🎟 Experiences ${typeCounts.experience}` },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTypeFilter(t.key)}
+              className={
+                typeFilter === t.key
+                  ? "h-8 rounded-lg bg-coral text-ink px-3 text-[13px] font-semibold whitespace-nowrap"
+                  : "h-8 rounded-lg bg-card border border-line text-mist px-3 text-[13px] font-medium whitespace-nowrap"
+              }
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {/* Folder tabs across the top (Groove-style) */}
       <div className="space-y-2">

@@ -21,6 +21,7 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
   function applyLookup(r: LookupResult) {
     setDraft((d) => ({
       ...d,
+      type: r.type,
       name: r.name || d.name,
       cuisine: r.cuisine ?? d.cuisine,
       area: r.area ?? d.area,

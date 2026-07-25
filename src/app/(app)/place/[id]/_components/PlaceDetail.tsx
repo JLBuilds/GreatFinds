@@ -46,6 +46,7 @@ function withLinks(text: string) {
 
 function toDraft(r: Restaurant): PlaceDraft {
   return {
+    type: r.type ?? "restaurant",
     name: r.name,
     cuisine: r.cuisine ?? "",
     area: r.area ?? "",

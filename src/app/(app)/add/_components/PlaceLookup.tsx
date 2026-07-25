@@ -2,10 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps";
-import { levelFromRangeText } from "@/lib/types";
+import { levelFromRangeText, type ListingType } from "@/lib/types";
 
 /** What the Google Places lookup hands back to the form. */
 export type LookupResult = {
+  type: ListingType;
   name: string;
   address: string | null;
   lat: number | null;
@@ -47,6 +48,45 @@ function componentText(
   return c?.longText ?? null;
 }
 
+const FOOD_TYPES = [
+  "restaurant",
+  "cafe",
+  "bar",
+  "bakery",
+  "meal_takeaway",
+  "meal_delivery",
+  "food",
+  "coffee_shop",
+];
+const EXPERIENCE_TYPES = [
+  "tourist_attraction",
+  "amusement_park",
+  "aquarium",
+  "art_gallery",
+  "museum",
+  "park",
+  "spa",
+  "zoo",
+  "night_club",
+  "movie_theater",
+  "bowling_alley",
+  "casino",
+  "stadium",
+  "campground",
+  "beach",
+];
+
+/** Guess whether a Google place is a restaurant or an experience from
+ *  its types (food wins if both appear). Defaults to restaurant. */
+function suggestType(types: string[] | undefined): ListingType {
+  if (!types) return "restaurant";
+  if (types.some((t) => FOOD_TYPES.includes(t) || t.endsWith("_restaurant"))) {
+    return "restaurant";
+  }
+  if (types.some((t) => EXPERIENCE_TYPES.includes(t))) return "experience";
+  return "restaurant";
+}
+
 /* Shared across Add-form lookup and the detail-page photo backfill. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function extractPriceRange(j: any): string | null {
@@ -75,7 +115,9 @@ export function extractPhotoNames(j: any): string[] {
 export function placeJsonToLookup(j: any): LookupResult {
   const priceRange = extractPriceRange(j);
   const googleLevel = j.priceLevel ? (PRICE_MAP[j.priceLevel] ?? null) : null;
+  const type = suggestType(j.types);
   return {
+    type,
     name: j.displayName ?? "",
     address: j.formattedAddress ?? null,
     lat: j.location?.lat ?? null,
@@ -84,7 +126,7 @@ export function placeJsonToLookup(j: any): LookupResult {
     google_maps_url: j.googleMapsURI ?? null,
     // Prefer Google's coarse level; fall back to deriving one from the
     // range so the place is still filterable by price.
-    price_level: googleLevel ?? levelFromRangeText(priceRange),
+    price_level: googleLevel ?? levelFromRangeText(priceRange, type),
     price_range: priceRange,
     cuisine: cuisineFromTypes(j.types),
     area:

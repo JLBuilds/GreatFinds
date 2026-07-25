@@ -1,8 +1,20 @@
 export type RestaurantStatus = "want_to_try" | "been" | "favorite";
 
+export type ListingType = "restaurant" | "experience";
+
+export const LISTING_TYPES: Array<{
+  key: ListingType;
+  label: string;
+  emoji: string;
+}> = [
+  { key: "restaurant", label: "Restaurant", emoji: "🍽" },
+  { key: "experience", label: "Experience", emoji: "🎟" },
+];
+
 export type Restaurant = {
   id: string;
   created_by: string | null;
+  type: ListingType;
   name: string;
   cuisine: string | null;
   area: string | null;
@@ -50,50 +62,71 @@ export function priceLabel(level: number | null): string {
   return "$".repeat(Math.min(4, Math.max(1, level)));
 }
 
-/** Preset price bands, mapped 1:1 to Google's price levels so that
- *  choosing a band both labels the place and makes it filterable.
- *  Selecting a band sets price_level (for filtering) and price_range
- *  (the human label shown on listings). */
-export const PRICE_BANDS: Array<{
-  level: number;
-  symbol: string;
-  range: string;
-}> = [
-  { level: 1, symbol: "$", range: "Under AED 75" },
-  { level: 2, symbol: "$$", range: "AED 75–200" },
-  { level: 3, symbol: "$$$", range: "AED 200–400" },
-  { level: 4, symbol: "$$$$", range: "AED 400+" },
-];
+type PriceBand = { level: number; symbol: string; range: string };
 
-/** The band range string for a Google price level (used to normalise
- *  Google's auto-filled price into our preset bands). */
-export function bandRange(level: number | null): string | null {
-  const b = PRICE_BANDS.find((band) => band.level === level);
+/** Preset price bands per listing type — a restaurant's scale is very
+ *  different from an experience's. Choosing a band sets both the level
+ *  (for filtering) and the human range label shown on listings. */
+export const PRICE_BANDS_BY_TYPE: Record<ListingType, PriceBand[]> = {
+  restaurant: [
+    { level: 1, symbol: "$", range: "Under AED 75" },
+    { level: 2, symbol: "$$", range: "AED 75–200" },
+    { level: 3, symbol: "$$$", range: "AED 200–400" },
+    { level: 4, symbol: "$$$$", range: "AED 400+" },
+  ],
+  experience: [
+    { level: 1, symbol: "$", range: "Under AED 150" },
+    { level: 2, symbol: "$$", range: "AED 150–400" },
+    { level: 3, symbol: "$$$", range: "AED 400–800" },
+    { level: 4, symbol: "$$$$", range: "AED 800+" },
+  ],
+};
+
+const PRICE_THRESHOLDS: Record<ListingType, [number, number, number]> = {
+  restaurant: [75, 200, 400],
+  experience: [150, 400, 800],
+};
+
+export function priceBands(type: ListingType | null | undefined): PriceBand[] {
+  return PRICE_BANDS_BY_TYPE[type ?? "restaurant"] ?? PRICE_BANDS_BY_TYPE.restaurant;
+}
+
+/** The band range string for a price level within a type. */
+export function bandRange(
+  level: number | null,
+  type: ListingType | null | undefined,
+): string | null {
+  const b = priceBands(type).find((band) => band.level === level);
   return b ? b.range : null;
 }
 
-/** Derive a 1–4 band level from a price-range string's starting amount.
- *  Lets places that Google gave a text range but no level (e.g.
- *  "AED 50–100") still be filtered by price. Thresholds match PRICE_BANDS. */
-export function levelFromRangeText(text: string | null): number | null {
+/** Derive a 1–4 level from a price-range string's starting amount, using
+ *  the thresholds for the listing's type. Lets places that Google gave a
+ *  text range but no level still be filtered by price. */
+export function levelFromRangeText(
+  text: string | null,
+  type: ListingType | null | undefined,
+): number | null {
   if (!text) return null;
   const m = text.match(/(\d[\d,]*)/);
   if (!m) return null;
   const n = parseInt(m[1].replace(/,/g, ""), 10);
   if (Number.isNaN(n)) return null;
-  if (n < 75) return 1;
-  if (n < 200) return 2;
-  if (n < 400) return 3;
+  const [t1, t2, t3] = PRICE_THRESHOLDS[type ?? "restaurant"];
+  if (n < t1) return 1;
+  if (n < t2) return 2;
+  if (n < t3) return 3;
   return 4;
 }
 
 /** The effective price level for filtering: the stored level, or one
- *  derived from the range text when the level is missing. */
+ *  derived from the range text (with the listing's type thresholds). */
 export function priceLevelOf(r: {
   price_level: number | null;
   price_range: string | null;
+  type?: ListingType | null;
 }): number | null {
-  return r.price_level ?? levelFromRangeText(r.price_range);
+  return r.price_level ?? levelFromRangeText(r.price_range, r.type ?? "restaurant");
 }
 
 /** Two-letter monogram for avatar circles ("Jo Lehndorf" → "JL"). */

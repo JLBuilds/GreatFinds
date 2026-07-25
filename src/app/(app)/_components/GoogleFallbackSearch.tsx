@@ -74,6 +74,7 @@ function Inner({ query }: { query: string }) {
     setError(null);
     const r = placeJsonToLookup(hit.json);
     const result = await createRestaurant({
+      type: r.type,
       name: r.name,
       cuisine: r.cuisine,
       area: r.area,

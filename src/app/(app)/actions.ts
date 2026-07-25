@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { RestaurantStatus } from "@/lib/types";
+import type { ListingType, RestaurantStatus } from "@/lib/types";
 
 export type RestaurantInput = {
+  type: ListingType;
   name: string;
   cuisine?: string | null;
   area?: string | null;
@@ -33,6 +34,8 @@ function clean(input: RestaurantInput): RestaurantInput | { error: string } {
   const name = input.name?.trim();
   if (!name) return { error: "Give the place a name." };
   if (!STATUSES.includes(input.status)) return { error: "Invalid status." };
+  const type: ListingType =
+    input.type === "experience" ? "experience" : "restaurant";
   const price =
     input.price_level && input.price_level >= 1 && input.price_level <= 4
       ? Math.round(input.price_level)
@@ -41,6 +44,7 @@ function clean(input: RestaurantInput): RestaurantInput | { error: string } {
     ? input.photos.filter((p) => typeof p === "string" && p).slice(0, 8)
     : null;
   return {
+    type,
     name,
     cuisine: input.cuisine?.trim() || null,
     area: input.area?.trim() || null,
