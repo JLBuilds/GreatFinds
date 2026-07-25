@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+/* Lock horizontal movement so the app feels native on iOS — kills the
+   side-swipe rubber-band and stops two-finger swipe-back gestures from
+   drifting the page. Vertical scroll is untouched. */
+html,
+body {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  width: 100%;
+}
+
+@theme {
+  /* GreatFind palette — produces bg-basil, text-tomato, border-cream, etc. */
+  --color-basil: #23503a; /* deep green — primary text & brand */
+  --color-tomato: #e05e3d; /* CTA / active */
+  --color-saffron: #eeb64b; /* "want to try" */
+  --color-berry: #b03a5b; /* "favorite" */
+  --color-mint: #2f9e77; /* "been" */
+  --color-cream: #fbf6ee; /* app background */
+
+  /* Wired to next/font CSS variables set in src/app/layout.tsx. */
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-body: var(--font-ubuntu), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Google PlaceAutocompleteElement — nudge the web component toward the
+   app's input styling. */
+gmp-place-autocomplete {
+  width: 100%;
+  --gmp-mat-color-surface: #ffffff;
+  --gmp-mat-color-on-surface: #23503a;
+  border-radius: 1rem;
+}
