@@ -140,6 +140,24 @@ export async function savePlaceMedia(
   return { success: true, id };
 }
 
+export async function setRestaurantFolder(
+  id: string,
+  folderId: string | null,
+): Promise<Result> {
+  if (!id) return { success: false, error: "Missing id." };
+  const supabase = await createClient();
+  // RLS restricts updates to the author's own rows.
+  const { error } = await supabase
+    .from("restaurants")
+    .update({ folder_id: folderId })
+    .eq("id", id);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/");
+  revalidatePath(`/place/${id}`);
+  return { success: true, id };
+}
+
 export async function setRestaurantStatus(
   id: string,
   status: RestaurantStatus,

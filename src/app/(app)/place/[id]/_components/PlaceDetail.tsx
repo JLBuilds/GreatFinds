@@ -13,6 +13,7 @@ import {
   type PlaceDraft,
 } from "../../../_components/PlaceFields";
 import { FetchPhotosButton } from "./FetchPhotosButton";
+import { FolderPicker } from "./FolderPicker";
 import {
   STATUS_META,
   placePhotoUrl,
@@ -211,12 +212,20 @@ export function PlaceDetail({
               📍 {restaurant.address}
             </p>
           ) : null}
-          {folderName ? (
+          {!isOwner && folderName ? (
             <span className="inline-flex items-center gap-1 rounded-md bg-lilac/20 text-lilac px-2 py-1 font-body text-[11px] font-semibold uppercase tracking-[0.06em]">
               📁 {folderName}
             </span>
           ) : null}
         </header>
+
+        {isOwner ? (
+          <FolderPicker
+            restaurantId={restaurant.id}
+            currentFolderId={restaurant.folder_id}
+            folders={folders}
+          />
+        ) : null}
 
         {restaurant.recommended_by || addedBy ? (
           <p className="font-body text-sm text-mist">

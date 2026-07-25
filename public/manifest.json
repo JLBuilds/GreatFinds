@@ -1,6 +1,6 @@
 {
-  "name": "GreatFind",
-  "short_name": "GreatFind",
+  "name": "GreatFinds",
+  "short_name": "GreatFinds",
   "description": "Every restaurant anyone's ever recommended to you — saved, mapped, and ready.",
   "start_url": "/",
   "display": "standalone",

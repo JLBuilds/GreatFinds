@@ -16,16 +16,16 @@ export default function RequestAccessPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/mark.svg"
-            alt="GreatFind"
+            alt="GreatFinds"
             width={120}
             height={120}
             className="h-14 w-auto mx-auto"
           />
           <h1 className="font-display text-3xl text-snow">
-            Request access to <em className="italic">GreatFind</em>
+            Request access to <em className="italic">GreatFinds</em>
           </h1>
           <p className="font-display text-base text-fog">
-            GreatFind is currently invite-only. Tell Jo who you are, and
+            GreatFinds is currently invite-only. Tell Jo who you are, and
             she&apos;ll be in touch.
           </p>
         </header>

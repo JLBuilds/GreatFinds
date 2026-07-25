@@ -21,7 +21,7 @@ export default async function SignupPage({
     return (
       <main className="min-h-screen bg-ink flex items-center justify-center px-4">
         <div className="w-full max-w-sm space-y-6 text-center">
-          <h1 className="font-display text-4xl text-snow">GreatFind</h1>
+          <h1 className="font-display text-4xl text-snow">GreatFinds</h1>
           <p className="font-display text-base text-fog">
             {validation.reason === "already_used"
               ? "This invite has already been used."
@@ -53,7 +53,7 @@ export default async function SignupPage({
       <div className="w-full max-w-sm space-y-6">
         <header className="text-center space-y-1">
           <h1 className="font-display text-4xl text-snow">
-            Welcome to <em className="italic">GreatFind</em>
+            Welcome to <em className="italic">GreatFinds</em>
           </h1>
           <p className="font-display text-base text-fog">
             You were invited.

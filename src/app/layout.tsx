@@ -11,8 +11,8 @@ const barlow = Barlow({
 
 export const metadata: Metadata = {
   title: {
-    default: "GreatFind",
-    template: "%s · GreatFind",
+    default: "GreatFinds",
+    template: "%s · GreatFinds",
   },
   description:
     "Every restaurant anyone's ever recommended to you — saved, mapped, and ready for 'where should we eat?'",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "GreatFind",
+    title: "GreatFinds",
   },
   formatDetection: {
     telephone: false,

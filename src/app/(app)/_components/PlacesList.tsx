@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createFolder } from "../actions";
 import {
   STATUS_META,
   initials,
@@ -26,8 +27,13 @@ export function PlacesList({
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
-  const [folderId, setFolderId] = useState<string | null>(null);
+  const [folderId, setFolderId] = useState<string | null | "none">(null);
   const [query, setQuery] = useState("");
+  const [localFolders, setLocalFolders] = useState<Folder[]>(folders);
+  const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [folderBusy, setFolderBusy] = useState(false);
+  const [folderError, setFolderError] = useState<string | null>(null);
 
   const counts = useMemo(() => {
     const c: Record<Filter, number> = {
@@ -47,17 +53,40 @@ export function PlacesList({
     { key: "favorite", label: `Favourites ${counts.favorite}` },
   ];
 
+  const folderCount = (id: string) =>
+    restaurants.filter((r) => r.folder_id === id).length;
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return restaurants.filter((r) => {
       if (filter !== "all" && r.status !== filter) return false;
-      if (folderId !== null && r.folder_id !== folderId) return false;
+      if (folderId === "none" && r.folder_id !== null) return false;
+      if (folderId !== null && folderId !== "none" && r.folder_id !== folderId)
+        return false;
       if (!q) return true;
       return [r.name, r.cuisine, r.area, r.city, r.recommended_by, r.notes]
         .filter(Boolean)
         .some((f) => (f as string).toLowerCase().includes(q));
     });
   }, [restaurants, filter, folderId, query]);
+
+  async function addFolder() {
+    if (!newFolderName.trim()) return;
+    setFolderBusy(true);
+    setFolderError(null);
+    const result = await createFolder(newFolderName);
+    setFolderBusy(false);
+    if (!result.success || !result.folderId) {
+      setFolderError(result.error ?? "Couldn't create folder.");
+      return;
+    }
+    const folder = { id: result.folderId, name: newFolderName.trim() };
+    setLocalFolders((f) => [...f, folder]);
+    setNewFolderName("");
+    setNewFolderOpen(false);
+    setFolderId(folder.id);
+    router.refresh();
+  }
 
   if (restaurants.length === 0) {
     return (
@@ -80,8 +109,8 @@ export function PlacesList({
   }
 
   return (
-    <div className="space-y-5">
-      {/* Search + add — mirrors the design's paste bar */}
+    <div className="space-y-4">
+      {/* Search + add */}
       <div className="flex gap-2.5 items-center">
         <div className="flex-1 h-[52px] rounded-lg bg-card border border-line flex items-center gap-3 px-4">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="shrink-0">
@@ -107,8 +136,8 @@ export function PlacesList({
         </button>
       </div>
 
-      {/* Folders */}
-      {folders.length > 0 ? (
+      {/* Folder tabs across the top (Groove-style) */}
+      <div className="space-y-2">
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-6 px-6">
           <button
             onClick={() => setFolderId(null)}
@@ -118,9 +147,9 @@ export function PlacesList({
                 : "shrink-0 h-8 rounded-lg bg-card border border-line text-mist px-3.5 text-[13px] font-medium flex items-center whitespace-nowrap"
             }
           >
-            📁 All folders
+            All places
           </button>
-          {folders.map((f) => (
+          {localFolders.map((f) => (
             <button
               key={f.id}
               onClick={() => setFolderId(folderId === f.id ? null : f.id)}
@@ -130,11 +159,37 @@ export function PlacesList({
                   : "shrink-0 h-8 rounded-lg bg-card border border-line text-mist px-3.5 text-[13px] font-medium flex items-center whitespace-nowrap"
               }
             >
-              {f.name}
+              {f.name} {folderCount(f.id)}
             </button>
           ))}
+          <button
+            onClick={() => setNewFolderOpen((v) => !v)}
+            className="shrink-0 h-8 rounded-lg bg-card border border-dashed border-line text-fog px-3.5 text-[13px] flex items-center whitespace-nowrap"
+          >
+            + New folder
+          </button>
         </div>
-      ) : null}
+        {newFolderOpen ? (
+          <div className="flex gap-2">
+            <input
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="Folder name"
+              className="flex-1 rounded-lg bg-card border border-line px-3 py-2 text-sm text-snow placeholder:text-fog/70 focus:outline-none"
+            />
+            <button
+              onClick={addFolder}
+              disabled={folderBusy || !newFolderName.trim()}
+              className="rounded-lg bg-coral text-ink px-4 py-2 text-sm font-semibold disabled:opacity-40"
+            >
+              {folderBusy ? "…" : "Create"}
+            </button>
+          </div>
+        ) : null}
+        {folderError ? (
+          <p className="text-xs text-coral">{folderError}</p>
+        ) : null}
+      </div>
 
       {/* Status filters */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-6 px-6">
@@ -153,7 +208,8 @@ export function PlacesList({
         ))}
       </div>
 
-      <ul className="space-y-3">
+      {/* 2-column tile grid (Groove library style) */}
+      <div className="grid grid-cols-2 gap-3">
         {filtered.map((r) => {
           const meta = STATUS_META[r.status];
           const who = r.recommended_by
@@ -162,71 +218,79 @@ export function PlacesList({
               ? names[r.created_by]
               : null;
           const thumb =
-            r.photos && r.photos[0] ? placePhotoUrl(r.photos[0], 200) : null;
+            r.photos && r.photos[0] ? placePhotoUrl(r.photos[0], 400) : null;
           return (
-            <li key={r.id}>
-              <Link
-                href={`/place/${r.id}`}
-                className="flex items-center gap-3.5 rounded-xl bg-card border border-line p-3.5 hover:border-coral/60 transition-colors"
-              >
+            <Link
+              key={r.id}
+              href={`/place/${r.id}`}
+              className="rounded-xl bg-card border border-line overflow-hidden flex flex-col hover:border-coral/60 transition-colors"
+            >
+              <div className="relative h-24">
                 {thumb ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={thumb}
                     alt=""
-                    className="w-[54px] h-[54px] rounded-lg object-cover shrink-0"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <div
-                    className="w-[54px] h-[54px] rounded-lg flex items-center justify-center text-lg font-semibold shrink-0"
-                    style={{ backgroundColor: `${meta.pin}22`, color: meta.pin }}
+                    className="w-full h-full flex items-center justify-center text-2xl font-semibold"
+                    style={{
+                      backgroundColor: `${meta.pin}22`,
+                      color: meta.pin,
+                    }}
                   >
                     {r.name.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div className="flex-1 flex flex-col gap-[3px] min-w-0">
-                  <span className="text-base font-semibold text-white truncate">
-                    {r.name}
-                  </span>
-                  <span className="text-[13px] text-fog truncate">
-                    {[
-                      r.cuisine,
-                      r.area ?? r.city,
-                      r.price_range ?? priceLabel(r.price_level),
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                  {who ? (
-                    <span className="flex items-center gap-1.5 mt-0.5">
-                      <span
-                        className="w-[18px] h-[18px] rounded-full text-[9px] font-semibold flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: meta.pin, color: "#1F1D2B" }}
-                      >
-                        {initials(who)}
-                      </span>
-                      <span className="text-[13px] font-medium text-mist truncate">
-                        {who}
-                      </span>
-                    </span>
-                  ) : null}
-                </div>
                 <span
-                  className="shrink-0 h-6 rounded-md px-2 text-[11px] font-semibold uppercase tracking-[0.06em] flex items-center"
-                  style={{ backgroundColor: "rgba(31,29,43,0.85)", color: meta.pin }}
+                  className="absolute left-2 top-2 h-5 rounded-md px-1.5 text-[10px] font-semibold uppercase tracking-[0.05em] flex items-center"
+                  style={{
+                    backgroundColor: "rgba(31,29,43,0.85)",
+                    color: meta.pin,
+                  }}
                 >
                   {meta.label}
                 </span>
-              </Link>
-            </li>
+              </div>
+              <div className="flex flex-col gap-1 p-3">
+                <span className="text-[15px] font-semibold text-white leading-tight line-clamp-2">
+                  {r.name}
+                </span>
+                <span className="text-[12px] text-fog truncate">
+                  {[r.cuisine, r.area ?? r.city]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+                {r.price_range || r.price_level ? (
+                  <span className="text-[12px] text-fog">
+                    {r.price_range ?? priceLabel(r.price_level)}
+                  </span>
+                ) : null}
+                {who ? (
+                  <span className="flex items-center gap-1.5 mt-0.5">
+                    <span
+                      className="w-[18px] h-[18px] rounded-full text-[9px] font-semibold flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: meta.pin, color: "#1F1D2B" }}
+                    >
+                      {initials(who)}
+                    </span>
+                    <span className="text-[12px] font-medium text-mist truncate">
+                      {who}
+                    </span>
+                  </span>
+                ) : null}
+              </div>
+            </Link>
           );
         })}
-        {filtered.length === 0 ? (
-          <li className="rounded-xl bg-card/60 border border-line p-6 text-center text-sm text-fog">
-            Nothing matches — try a different filter.
-          </li>
-        ) : null}
-      </ul>
+      </div>
+      {filtered.length === 0 ? (
+        <div className="rounded-xl bg-card/60 border border-line p-6 text-center text-sm text-fog">
+          Nothing here yet — try a different folder or filter.
+        </div>
+      ) : null}
     </div>
   );
 }

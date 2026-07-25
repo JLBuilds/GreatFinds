@@ -116,7 +116,7 @@ export function RequestAccessForm() {
           required
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="How did you hear about GreatFind? What draws you to it?"
+          placeholder="How did you hear about GreatFinds? What draws you to it?"
           disabled={submitting}
           className="w-full rounded-lg bg-card px-4 py-3 font-body text-sm text-snow placeholder:text-fog/70 focus:outline-none focus:bg-card disabled:opacity-60"
         />

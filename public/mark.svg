@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
-  <!-- GreatFind mark: pin + fork, transparent background -->
-  <path d="M60 8C34 8 14 28 14 54c0 35 46 58 46 58s46-23 46-58C106 28 86 8 60 8z" fill="#23503A"/>
-  <g fill="#FBF6EE">
+  <!-- GreatFinds wordmark mark: coral pin + ink fork, transparent background -->
+  <path d="M60 8C34 8 14 28 14 54c0 35 46 58 46 58s46-23 46-58C106 28 86 8 60 8z" fill="#EA7C69"/>
+  <g fill="#1F1D2B">
     <path d="M50.5 32c-2 0-3.2 1.2-3.2 3.2v17.6c0 4 2.4 7.2 6 8.4v26.4c0 3.6 3.2 6.8 6.8 6.8s6.8-3.2 6.8-6.8V61.2c3.6-1.2 6-4.4 6-8.4V35.2c0-2-1.2-3.2-3.2-3.2s-3.2 1.2-3.2 3.2v16h-3.2v-16c0-2-1.2-3.2-3.2-3.2s-3.2 1.2-3.2 3.2v16h-3.2v-16c0-2-1.2-3.2-3.2-3.2z"/>
   </g>
 </svg>

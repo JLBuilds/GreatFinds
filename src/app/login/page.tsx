@@ -15,7 +15,7 @@ export default async function LoginPage({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/mark.svg"
-            alt="GreatFind"
+            alt="GreatFinds"
             width={120}
             height={120}
             className="h-14 w-auto mx-auto"
@@ -24,7 +24,7 @@ export default async function LoginPage({
             className="font-display text-4xl text-snow"
             style={{ fontVariationSettings: '"opsz" 144', fontWeight: 400 }}
           >
-            GreatFind
+            GreatFinds
           </h1>
           <p className="font-display text-sm text-fog">
             Every recommendation, remembered.
