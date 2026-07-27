@@ -76,13 +76,24 @@ const EXPERIENCE_TYPES = [
   "beach",
 ];
 
-/** Guess whether a Google place is a restaurant or an experience from
- *  its types (food wins if both appear). Defaults to restaurant. */
+const HOTEL_TYPES = [
+  "lodging",
+  "hotel",
+  "resort_hotel",
+  "motel",
+  "guest_house",
+  "bed_and_breakfast",
+  "hostel",
+];
+
+/** Guess a place's type from Google's categories. Food wins over hotel
+ *  over experience if several appear. Defaults to restaurant. */
 function suggestType(types: string[] | undefined): ListingType {
   if (!types) return "restaurant";
   if (types.some((t) => FOOD_TYPES.includes(t) || t.endsWith("_restaurant"))) {
     return "restaurant";
   }
+  if (types.some((t) => HOTEL_TYPES.includes(t))) return "hotel";
   if (types.some((t) => EXPERIENCE_TYPES.includes(t))) return "experience";
   return "restaurant";
 }

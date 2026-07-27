@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { ListingType, RestaurantStatus } from "@/lib/types";
 
 export type RestaurantInput = {
@@ -160,6 +161,67 @@ export async function setRestaurantFolder(
   revalidatePath("/");
   revalidatePath(`/place/${id}`);
   return { success: true, id };
+}
+
+/** Copy a shared place (read via service role) into the current user's
+ *  own list. Used by the public /s/[id] share page. */
+export async function savePlaceToMyList(
+  sourceId: string,
+): Promise<Result> {
+  if (!sourceId) return { success: false, error: "Missing place." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Sign in to save this." };
+
+  const admin = createAdminClient();
+  const { data: src, error: readErr } = await admin
+    .from("restaurants")
+    .select("*")
+    .eq("id", sourceId)
+    .maybeSingle();
+  if (readErr || !src) return { success: false, error: "Place not found." };
+
+  // Skip if the user already has this exact place saved.
+  if (src.google_place_id) {
+    const { data: dupe } = await supabase
+      .from("restaurants")
+      .select("id")
+      .eq("google_place_id", src.google_place_id)
+      .maybeSingle();
+    if (dupe) return { success: true, id: dupe.id };
+  }
+
+  const { data, error } = await supabase
+    .from("restaurants")
+    .insert({
+      created_by: user.id,
+      type: src.type ?? "restaurant",
+      name: src.name,
+      cuisine: src.cuisine,
+      area: src.area,
+      city: src.city,
+      price_level: src.price_level,
+      price_range: src.price_range,
+      status: "want_to_try",
+      recommended_by: src.recommended_by,
+      notes: src.notes,
+      link: src.link,
+      google_place_id: src.google_place_id,
+      google_maps_url: src.google_maps_url,
+      address: src.address,
+      lat: src.lat,
+      lng: src.lng,
+      photos: src.photos,
+      folder_id: null,
+    })
+    .select("id")
+    .single();
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/");
+  return { success: true, id: data.id };
 }
 
 export async function setRestaurantStatus(

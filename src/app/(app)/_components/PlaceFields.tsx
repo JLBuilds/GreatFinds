@@ -229,14 +229,18 @@ export function PlaceFields({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label htmlFor="pf-cuisine" className={labelCls}>
-            {draft.type === "experience" ? "Category" : "Cuisine"}
+            {draft.type === "restaurant" ? "Cuisine" : "Category"}
           </label>
           <input
             id="pf-cuisine"
             value={draft.cuisine}
             onChange={(e) => set({ cuisine: e.target.value })}
             placeholder={
-              draft.type === "experience" ? "Desert safari" : "Lebanese"
+              draft.type === "experience"
+                ? "Desert safari"
+                : draft.type === "hotel"
+                  ? "Beach resort"
+                  : "Lebanese"
             }
             className={inputCls}
           />

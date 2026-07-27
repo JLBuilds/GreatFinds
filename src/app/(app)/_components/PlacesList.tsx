@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createFolder, setRestaurantFolder } from "../actions";
 import { GoogleFallbackSearch } from "./GoogleFallbackSearch";
 import {
+  LISTING_TYPES,
   STATUS_META,
   extractUrl,
   initials,
@@ -14,6 +15,7 @@ import {
   priceLabel,
   priceLevelOf,
   type Folder,
+  type ListingType,
   type Restaurant,
   type RestaurantStatus,
 } from "@/lib/types";
@@ -29,9 +31,7 @@ export function PlacesList({
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | "restaurant" | "experience">(
-    "all",
-  );
+  const [typeFilter, setTypeFilter] = useState<"all" | ListingType>("all");
   const [folderId, setFolderId] = useState<string | null | "none">(null);
   const [priceFilter, setPriceFilter] = useState<number | null>(null);
   const [query, setQuery] = useState("");
@@ -98,14 +98,16 @@ export function PlacesList({
   }, [restaurants, filter, typeFilter, folderId, priceFilter, query]);
 
   const typeCounts = useMemo(() => {
-    let restaurant = 0;
-    let experience = 0;
-    for (const r of restaurants) {
-      if ((r.type ?? "restaurant") === "experience") experience++;
-      else restaurant++;
-    }
-    return { restaurant, experience };
+    const c: Record<ListingType, number> = {
+      restaurant: 0,
+      experience: 0,
+      hotel: 0,
+    };
+    for (const r of restaurants) c[r.type ?? "restaurant"]++;
+    return c;
   }, [restaurants]);
+  // Only offer the type filter once the list spans more than one type.
+  const typesPresent = LISTING_TYPES.filter((t) => typeCounts[t.key] > 0);
 
   const selectedRestaurants = restaurants.filter((r) => selectedIds.has(r.id));
 
@@ -226,26 +228,30 @@ export function PlacesList({
         </button>
       </div>
 
-      {/* Type filter — only shown once experiences exist */}
-      {typeCounts.experience > 0 ? (
-        <div className="flex gap-2">
-          {(
-            [
-              { key: "all", label: "Everything" },
-              { key: "restaurant", label: `🍽 Restaurants ${typeCounts.restaurant}` },
-              { key: "experience", label: `🎟 Experiences ${typeCounts.experience}` },
-            ] as const
-          ).map((t) => (
+      {/* Type filter — only shown once the list spans >1 type */}
+      {typesPresent.length > 1 ? (
+        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-6 px-6">
+          <button
+            onClick={() => setTypeFilter("all")}
+            className={
+              typeFilter === "all"
+                ? "shrink-0 h-8 rounded-lg bg-coral text-ink px-3 text-[13px] font-semibold whitespace-nowrap"
+                : "shrink-0 h-8 rounded-lg bg-card border border-line text-mist px-3 text-[13px] font-medium whitespace-nowrap"
+            }
+          >
+            Everything
+          </button>
+          {typesPresent.map((t) => (
             <button
               key={t.key}
               onClick={() => setTypeFilter(t.key)}
               className={
                 typeFilter === t.key
-                  ? "h-8 rounded-lg bg-coral text-ink px-3 text-[13px] font-semibold whitespace-nowrap"
-                  : "h-8 rounded-lg bg-card border border-line text-mist px-3 text-[13px] font-medium whitespace-nowrap"
+                  ? "shrink-0 h-8 rounded-lg bg-coral text-ink px-3 text-[13px] font-semibold whitespace-nowrap"
+                  : "shrink-0 h-8 rounded-lg bg-card border border-line text-mist px-3 text-[13px] font-medium whitespace-nowrap"
               }
             >
-              {t.label}
+              {t.emoji} {t.label}s {typeCounts[t.key]}
             </button>
           ))}
         </div>

@@ -85,6 +85,31 @@ export function PlaceDetail({
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [shareNote, setShareNote] = useState<string | null>(null);
+
+  async function share() {
+    const url = `${window.location.origin}/s/${restaurant.id}`;
+    const text = `${restaurant.name} — on GreatFinds`;
+    // Native share sheet (WhatsApp, Messages, etc.) on mobile; clipboard
+    // fallback on desktop or if the user's browser lacks it.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nav = navigator as any;
+    if (nav.share) {
+      try {
+        await nav.share({ title: restaurant.name, text, url });
+      } catch {
+        // User dismissed the share sheet — nothing to do.
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareNote("Link copied");
+      setTimeout(() => setShareNote(null), 2000);
+    } catch {
+      setShareNote(url);
+    }
+  }
 
   const meta = STATUS_META[restaurant.status];
   const folderName =
@@ -310,6 +335,18 @@ export function PlaceDetail({
               Visit link →
             </a>
           ) : null}
+          <button
+            onClick={share}
+            className="w-full flex items-center justify-center gap-2 bg-card border border-line text-snow rounded-lg py-3 font-body font-medium hover:bg-card/80"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M8.7 13.5l6.6 3.8M15.3 6.7L8.7 10.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              <circle cx="18" cy="5" r="2.6" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="6" cy="12" r="2.6" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="18" cy="19" r="2.6" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+            {shareNote ?? "Share"}
+          </button>
         </div>
 
         {isOwner ? (
