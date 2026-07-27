@@ -12,6 +12,7 @@ export type RestaurantInput = {
   cuisine?: string | null;
   area?: string | null;
   city?: string | null;
+  country?: string | null;
   price_level?: number | null;
   price_range?: string | null;
   status: RestaurantStatus;
@@ -50,6 +51,7 @@ function clean(input: RestaurantInput): RestaurantInput | { error: string } {
     cuisine: input.cuisine?.trim() || null,
     area: input.area?.trim() || null,
     city: input.city?.trim() || null,
+    country: input.country?.trim() || null,
     price_level: price,
     price_range: input.price_range?.trim() || null,
     status: input.status,
@@ -202,6 +204,7 @@ export async function savePlaceToMyList(
       cuisine: src.cuisine,
       area: src.area,
       city: src.city,
+      country: src.country,
       price_level: src.price_level,
       price_range: src.price_range,
       status: "want_to_try",

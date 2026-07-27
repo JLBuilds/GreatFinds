@@ -26,6 +26,7 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
       cuisine: r.cuisine ?? d.cuisine,
       area: r.area ?? d.area,
       city: r.city ?? d.city,
+      country: r.country ?? d.country,
       price_level: r.price_level ?? d.price_level,
       price_range: r.price_range ?? d.price_range,
       link: d.link || (r.website ?? ""),

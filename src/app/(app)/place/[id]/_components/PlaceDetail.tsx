@@ -51,6 +51,7 @@ function toDraft(r: Restaurant): PlaceDraft {
     cuisine: r.cuisine ?? "",
     area: r.area ?? "",
     city: r.city ?? "",
+    country: r.country ?? "",
     price_level: r.price_level,
     price_range: r.price_range,
     status: r.status,

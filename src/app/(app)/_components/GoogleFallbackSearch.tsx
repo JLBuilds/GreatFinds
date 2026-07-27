@@ -79,6 +79,7 @@ function Inner({ query }: { query: string }) {
       cuisine: r.cuisine,
       area: r.area,
       city: r.city,
+      country: r.country,
       price_level: r.price_level,
       price_range: r.price_range,
       status: "want_to_try",

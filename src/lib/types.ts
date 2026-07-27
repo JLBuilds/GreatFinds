@@ -20,6 +20,7 @@ export type Restaurant = {
   cuisine: string | null;
   area: string | null;
   city: string | null;
+  country: string | null;
   price_level: number | null;
   price_range: string | null;
   status: RestaurantStatus;

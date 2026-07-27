@@ -18,6 +18,7 @@ export type PlaceDraft = {
   cuisine: string;
   area: string;
   city: string;
+  country: string;
   price_level: number | null;
   price_range: string | null;
   status: RestaurantStatus;
@@ -39,6 +40,7 @@ export const EMPTY_DRAFT: PlaceDraft = {
   cuisine: "",
   area: "",
   city: "",
+  country: "",
   price_level: null,
   price_range: null,
   status: "want_to_try",
@@ -259,17 +261,31 @@ export function PlaceFields({
         </div>
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="pf-city" className={labelCls}>
-          City
-        </label>
-        <input
-          id="pf-city"
-          value={draft.city}
-          onChange={(e) => set({ city: e.target.value })}
-          placeholder="Dubai"
-          className={inputCls}
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label htmlFor="pf-city" className={labelCls}>
+            City
+          </label>
+          <input
+            id="pf-city"
+            value={draft.city}
+            onChange={(e) => set({ city: e.target.value })}
+            placeholder="Dubai"
+            className={inputCls}
+          />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="pf-country" className={labelCls}>
+            Country
+          </label>
+          <input
+            id="pf-country"
+            value={draft.country}
+            onChange={(e) => set({ country: e.target.value })}
+            placeholder="UAE"
+            className={inputCls}
+          />
+        </div>
       </div>
 
       <div className="space-y-1.5">

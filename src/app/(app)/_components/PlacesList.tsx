@@ -75,6 +75,8 @@ export function PlacesList({
   const [typeFilter, setTypeFilter] = useState<"all" | ListingType>("all");
   const [folderId, setFolderId] = useState<string | null | "none">(null);
   const [priceFilter, setPriceFilter] = useState<number | null>(null);
+  const [countryFilter, setCountryFilter] = useState<string | null>(null);
+  const [cityFilter, setCityFilter] = useState<string | null>(null);
   const [areaFilter, setAreaFilter] = useState<string | null>(null);
   const [radiusKm, setRadiusKm] = useState<number | null>(null);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(
@@ -139,7 +141,9 @@ export function PlacesList({
       if (folderId !== null && folderId !== "none" && r.folder_id !== folderId)
         return false;
       if (priceFilter !== null && priceLevelOf(r) !== priceFilter) return false;
-      if (areaFilter && (r.area ?? r.city) !== areaFilter) return false;
+      if (countryFilter && r.country !== countryFilter) return false;
+      if (cityFilter && r.city !== cityFilter) return false;
+      if (areaFilter && r.area !== areaFilter) return false;
       if (radiusKm && userLoc) {
         if (r.lat == null || r.lng == null) return false;
         if (haversineKm(userLoc, { lat: r.lat, lng: r.lng }) > radiusKm)
@@ -156,32 +160,54 @@ export function PlacesList({
     typeFilter,
     folderId,
     priceFilter,
+    countryFilter,
+    cityFilter,
     areaFilter,
     radiusKm,
     userLoc,
     query,
   ]);
 
+  // Cascading location options: countries → cities (in country) → areas
+  // (in city).
+  const countries = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of restaurants) if (r.country) s.add(r.country);
+    return Array.from(s).sort();
+  }, [restaurants]);
+
+  const cities = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of restaurants) {
+      if (countryFilter && r.country !== countryFilter) continue;
+      if (r.city) s.add(r.city);
+    }
+    return Array.from(s).sort();
+  }, [restaurants, countryFilter]);
+
   const areas = useMemo(() => {
     const s = new Set<string>();
     for (const r of restaurants) {
-      const a = r.area ?? r.city;
-      if (a) s.add(a);
+      if (countryFilter && r.country !== countryFilter) continue;
+      if (cityFilter && r.city !== cityFilter) continue;
+      if (r.area) s.add(r.area);
     }
     return Array.from(s).sort();
-  }, [restaurants]);
+  }, [restaurants, countryFilter, cityFilter]);
 
   const activeFilterCount =
     (filter !== "all" ? 1 : 0) +
     (typeFilter !== "all" ? 1 : 0) +
     (priceFilter !== null ? 1 : 0) +
-    (areaFilter !== null ? 1 : 0) +
+    (countryFilter || cityFilter || areaFilter ? 1 : 0) +
     (radiusKm !== null ? 1 : 0);
 
   function clearFilters() {
     setFilter("all");
     setTypeFilter("all");
     setPriceFilter(null);
+    setCountryFilter(null);
+    setCityFilter(null);
     setAreaFilter(null);
     setRadiusKm(null);
   }
@@ -644,8 +670,68 @@ export function PlacesList({
               </div>
             </div>
 
-            {/* Area */}
-            {areas.length > 0 ? (
+            {/* Country */}
+            {countries.length > 1 ? (
+              <div className="space-y-1.5">
+                <p className="text-xs text-fog tracking-wide uppercase">
+                  Country
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <FilterChip
+                    active={countryFilter === null}
+                    onClick={() => {
+                      setCountryFilter(null);
+                      setCityFilter(null);
+                      setAreaFilter(null);
+                    }}
+                    label="All countries"
+                  />
+                  {countries.map((c) => (
+                    <FilterChip
+                      key={c}
+                      active={countryFilter === c}
+                      onClick={() => {
+                        setCountryFilter(c);
+                        setCityFilter(null);
+                        setAreaFilter(null);
+                      }}
+                      label={c}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {/* City */}
+            {cities.length > 1 ? (
+              <div className="space-y-1.5">
+                <p className="text-xs text-fog tracking-wide uppercase">City</p>
+                <div className="flex flex-wrap gap-2">
+                  <FilterChip
+                    active={cityFilter === null}
+                    onClick={() => {
+                      setCityFilter(null);
+                      setAreaFilter(null);
+                    }}
+                    label="All cities"
+                  />
+                  {cities.map((c) => (
+                    <FilterChip
+                      key={c}
+                      active={cityFilter === c}
+                      onClick={() => {
+                        setCityFilter(cityFilter === c ? null : c);
+                        setAreaFilter(null);
+                      }}
+                      label={c}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Area — only once a city narrows it down */}
+            {cityFilter && areas.length > 1 ? (
               <div className="space-y-1.5">
                 <p className="text-xs text-fog tracking-wide uppercase">Area</p>
                 <div className="flex flex-wrap gap-2">

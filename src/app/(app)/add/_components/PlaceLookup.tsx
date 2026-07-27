@@ -18,6 +18,7 @@ export type LookupResult = {
   cuisine: string | null;
   area: string | null;
   city: string | null;
+  country: string | null;
   website: string | null;
   photos: string[];
 };
@@ -143,7 +144,11 @@ export function placeJsonToLookup(j: any): LookupResult {
     area:
       componentText(j.addressComponents, "sublocality") ??
       componentText(j.addressComponents, "neighborhood"),
-    city: componentText(j.addressComponents, "locality"),
+    city:
+      componentText(j.addressComponents, "locality") ??
+      componentText(j.addressComponents, "postal_town") ??
+      componentText(j.addressComponents, "administrative_area_level_2"),
+    country: componentText(j.addressComponents, "country"),
     website: j.websiteURI ?? null,
     photos: extractPhotoNames(j),
   };
