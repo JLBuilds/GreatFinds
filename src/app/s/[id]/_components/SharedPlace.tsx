@@ -136,12 +136,20 @@ export function SharedPlace({
               </button>
             )
           ) : (
-            <Link
-              href="/login"
-              className="block w-full text-center bg-coral text-ink rounded-lg py-3 font-body font-semibold"
-            >
-              Open in GreatFinds
-            </Link>
+            <div className="space-y-2">
+              <Link
+                href="/login"
+                className="block w-full text-center bg-coral text-ink rounded-lg py-3 font-body font-semibold"
+              >
+                Open in GreatFinds
+              </Link>
+              <Link
+                href="/request-access"
+                className="block w-full text-center font-body text-sm text-fog hover:text-snow"
+              >
+                New here? Request access →
+              </Link>
+            </div>
           )}
           {error ? (
             <p className="font-body text-sm text-coral text-center">{error}</p>
