@@ -29,6 +29,15 @@ body {
   --font-display: var(--font-barlow), -apple-system, "Segoe UI", sans-serif;
 }
 
+/* Hide scrollbars on horizontal filter rows (scroll still works). */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Google PlaceAutocompleteElement — match the dark input styling. */
 gmp-place-autocomplete {
   width: 100%;

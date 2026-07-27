@@ -253,7 +253,7 @@ export function PlacesList({
 
       {/* Folder tabs across the top (Groove-style) */}
       <div className="space-y-2">
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-6 px-6">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-6 px-6">
           <button
             onClick={() => setFolderId(null)}
             className={
@@ -307,7 +307,7 @@ export function PlacesList({
       </div>
 
       {/* Status filters */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-6 px-6">
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-6 px-6">
         {FILTERS.map((f) => (
           <button
             key={f.key}
@@ -460,7 +460,7 @@ export function PlacesList({
               </div>
             </Link>
             {selectMode ? (
-              // Selection checkbox
+              // Selection checkbox (categorising now happens via Select)
               <button
                 onClick={() => toggleSelect(r.id)}
                 aria-label={selected ? "Deselect" : "Select"}
@@ -476,27 +476,7 @@ export function PlacesList({
                   </svg>
                 ) : null}
               </button>
-            ) : (
-              // Categorise this single place
-              <button
-                onClick={() => {
-                  setMoveNewOpen(false);
-                  setMoveNewName("");
-                  setMoveTargets([r]);
-                }}
-                aria-label="Move to folder"
-                className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-ink/85 border border-line flex items-center justify-center text-mist hover:text-coral"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M3 7a2 2 0 0 1 2-2h3.6l1.8 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            )}
+            ) : null}
             </div>
           );
         })}
