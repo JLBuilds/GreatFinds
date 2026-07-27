@@ -49,6 +49,9 @@ export function PlacesList({
   // Multi-select
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Chosen destination in the move sheet (undefined = nothing picked yet,
+  // null = "No folder").
+  const [chosen, setChosen] = useState<string | null | undefined>(undefined);
 
   const counts = useMemo(() => {
     const c: Record<Filter, number> = {
@@ -144,20 +147,17 @@ export function PlacesList({
     }
   }
 
-  async function moveToNewFolder(targets: Restaurant[]) {
+  async function createAndSelectFolder() {
     if (!moveNewName.trim()) return;
     setMoveBusy(true);
     const created = await createFolder(moveNewName);
-    if (!created.success || !created.folderId) {
-      setMoveBusy(false);
-      return;
-    }
+    setMoveBusy(false);
+    if (!created.success || !created.folderId) return;
     const folder = { id: created.folderId, name: moveNewName.trim() };
     setLocalFolders((f) => [...f, folder]);
-    await Promise.all(targets.map((t) => setRestaurantFolder(t.id, folder.id)));
-    setMoveBusy(false);
-    closeMove();
-    router.refresh();
+    setChosen(folder.id);
+    setMoveNewName("");
+    setMoveNewOpen(false);
   }
 
   function toggleSelect(id: string) {
@@ -517,6 +517,7 @@ export function PlacesList({
               onClick={() => {
                 setMoveNewOpen(false);
                 setMoveNewName("");
+                setChosen(undefined);
                 setMoveTargets(selectedRestaurants);
               }}
               className="rounded-lg bg-coral text-ink px-4 py-2 text-sm font-semibold disabled:opacity-40"
@@ -542,32 +543,36 @@ export function PlacesList({
                 ? `Move “${moveTargets[0].name}” to…`
                 : `Move ${moveTargets.length} places to…`}
             </p>
-            <div className="flex flex-col gap-2 max-h-[45vh] overflow-y-auto">
-              <button
-                onClick={() => doMove(moveTargets, null)}
-                disabled={moveBusy}
-                className={
-                  moveTargets.length === 1 && moveTargets[0].folder_id === null
-                    ? "text-left rounded-lg bg-lilac text-ink px-4 py-2.5 text-sm font-semibold"
-                    : "text-left rounded-lg bg-card border border-line text-mist px-4 py-2.5 text-sm"
-                }
-              >
-                No folder
-              </button>
-              {localFolders.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => doMove(moveTargets, f.id)}
-                  disabled={moveBusy}
-                  className={
-                    moveTargets.length === 1 && moveTargets[0].folder_id === f.id
-                      ? "text-left rounded-lg bg-lilac text-ink px-4 py-2.5 text-sm font-semibold"
-                      : "text-left rounded-lg bg-card border border-line text-mist px-4 py-2.5 text-sm"
-                  }
-                >
-                  {f.name}
-                </button>
-              ))}
+            <div className="flex flex-col gap-1 max-h-[40vh] overflow-y-auto no-scrollbar">
+              {[{ id: null as string | null, name: "No folder" }, ...localFolders].map(
+                (f) => {
+                  const active = chosen === f.id;
+                  return (
+                    <button
+                      key={f.id ?? "none"}
+                      onClick={() => setChosen(f.id)}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-card/60"
+                    >
+                      <span
+                        className={
+                          active
+                            ? "w-[18px] h-[18px] rounded-full border-[5px] border-coral shrink-0"
+                            : "w-[18px] h-[18px] rounded-full border-2 border-line shrink-0"
+                        }
+                      />
+                      <span
+                        className={
+                          active
+                            ? "text-sm font-semibold text-snow"
+                            : "text-sm text-mist"
+                        }
+                      >
+                        {f.name}
+                      </span>
+                    </button>
+                  );
+                },
+              )}
             </div>
 
             {moveNewOpen ? (
@@ -579,11 +584,11 @@ export function PlacesList({
                   className="flex-1 rounded-lg bg-card border border-line px-3 py-2 text-sm text-snow placeholder:text-fog/70 focus:outline-none"
                 />
                 <button
-                  onClick={() => moveToNewFolder(moveTargets)}
+                  onClick={createAndSelectFolder}
                   disabled={moveBusy || !moveNewName.trim()}
-                  className="rounded-lg bg-coral text-ink px-4 py-2 text-sm font-semibold disabled:opacity-40"
+                  className="rounded-lg bg-card border border-line text-snow px-4 py-2 text-sm font-semibold disabled:opacity-40"
                 >
-                  {moveBusy ? "…" : "Create"}
+                  {moveBusy ? "…" : "Add"}
                 </button>
               </div>
             ) : (
@@ -596,8 +601,15 @@ export function PlacesList({
             )}
 
             <button
+              onClick={() => doMove(moveTargets, chosen ?? null)}
+              disabled={moveBusy || chosen === undefined}
+              className="w-full rounded-lg bg-coral text-ink py-3 text-sm font-semibold disabled:opacity-40"
+            >
+              {moveBusy ? "Moving…" : "Move"}
+            </button>
+            <button
               onClick={() => setMoveTargets(null)}
-              className="w-full text-fog text-sm py-2"
+              className="w-full text-fog text-sm py-1"
             >
               Cancel
             </button>
