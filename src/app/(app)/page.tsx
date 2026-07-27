@@ -32,18 +32,10 @@ export default async function HomePage() {
   const myName = me ? (names[me.id] ?? me.email ?? "") : "";
   const count = (restaurants ?? []).length;
 
-  const now = new Date();
-  const dateLine = now.toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-
   return (
     <main className="max-w-sm mx-auto px-6 pt-6">
       <header className="flex items-end justify-between pb-6">
         <div className="flex flex-col gap-[3px]">
-          <span className="text-sm font-medium text-fog">{dateLine}</span>
           <h1 className="text-[26px] font-semibold text-white tracking-[-0.01em]">
             Places you&apos;ll love
           </h1>

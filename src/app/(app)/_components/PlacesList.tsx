@@ -169,6 +169,15 @@ export function PlacesList({
     });
   }
 
+  function toggleSelectAll() {
+    setSelectedIds((prev) => {
+      if (filtered.length > 0 && filtered.every((r) => prev.has(r.id))) {
+        return new Set();
+      }
+      return new Set(filtered.map((r) => r.id));
+    });
+  }
+
   if (restaurants.length === 0) {
     return (
       <div className="rounded-xl bg-card border border-line p-8 text-center space-y-2">
@@ -332,33 +341,24 @@ export function PlacesList({
           ))}
         </div>
         {selectMode ? (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                setSelectMode(false);
-                setSelectedIds(new Set());
-              }}
-              className="text-[13px] text-fog"
-            >
-              Cancel
-            </button>
-            <button
-              disabled={selectedIds.size === 0}
-              onClick={() => {
-                setMoveNewOpen(false);
-                setMoveNewName("");
-                setMoveTargets(selectedRestaurants);
-              }}
-              className="text-[13px] font-semibold text-coral disabled:opacity-40"
-            >
-              Move{selectedIds.size ? ` (${selectedIds.size})` : ""}
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              setSelectMode(false);
+              setSelectedIds(new Set());
+            }}
+            className="h-8 rounded-lg border border-line text-mist px-3 text-[13px] font-medium"
+          >
+            Cancel
+          </button>
         ) : (
           <button
             onClick={() => setSelectMode(true)}
-            className="text-[13px] font-semibold text-coral"
+            className="h-8 rounded-lg border border-coral text-coral px-3 text-[13px] font-semibold flex items-center gap-1.5"
           >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M9 11l3 3L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             Select
           </button>
         )}
@@ -509,6 +509,41 @@ export function PlacesList({
               : "Nothing here yet — try a different folder or filter."}
           </p>
           {query.trim() ? <GoogleFallbackSearch query={query.trim()} /> : null}
+        </div>
+      ) : null}
+
+      {/* Spacer so the floating bar doesn't cover the last tiles */}
+      {selectMode ? <div className="h-24" /> : null}
+
+      {/* Floating multi-select action bar */}
+      {selectMode ? (
+        <div className="fixed left-0 right-0 bottom-[84px] z-40 px-4">
+          <div className="max-w-sm mx-auto bg-ink border border-line rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] p-3 flex items-center gap-3">
+            <span className="flex-1 text-sm font-medium text-snow">
+              {selectedIds.size === 0
+                ? "Tap places to select"
+                : `${selectedIds.size} selected`}
+            </span>
+            <button
+              onClick={toggleSelectAll}
+              className="text-[13px] text-mist"
+            >
+              {filtered.length > 0 && filtered.every((r) => selectedIds.has(r.id))
+                ? "Clear"
+                : "Select all"}
+            </button>
+            <button
+              disabled={selectedIds.size === 0}
+              onClick={() => {
+                setMoveNewOpen(false);
+                setMoveNewName("");
+                setMoveTargets(selectedRestaurants);
+              }}
+              className="rounded-lg bg-coral text-ink px-4 py-2 text-sm font-semibold disabled:opacity-40"
+            >
+              Move to folder
+            </button>
+          </div>
         </div>
       ) : null}
 
