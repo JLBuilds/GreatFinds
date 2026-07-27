@@ -87,10 +87,6 @@ export function PlacesList({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [localFolders, setLocalFolders] = useState<Folder[]>(folders);
-  const [newFolderOpen, setNewFolderOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
-  const [folderBusy, setFolderBusy] = useState(false);
-  const [folderError, setFolderError] = useState<string | null>(null);
   // Home-screen "move to folder" sheet — targets are one tile's place,
   // or the whole multi-select set.
   const [moveTargets, setMoveTargets] = useState<Restaurant[] | null>(null);
@@ -198,6 +194,7 @@ export function PlacesList({
   const activeFilterCount =
     (filter !== "all" ? 1 : 0) +
     (typeFilter !== "all" ? 1 : 0) +
+    (folderId !== null ? 1 : 0) +
     (priceFilter !== null ? 1 : 0) +
     (countryFilter || cityFilter || areaFilter ? 1 : 0) +
     (radiusKm !== null ? 1 : 0);
@@ -205,6 +202,7 @@ export function PlacesList({
   function clearFilters() {
     setFilter("all");
     setTypeFilter("all");
+    setFolderId(null);
     setPriceFilter(null);
     setCountryFilter(null);
     setCityFilter(null);
@@ -254,24 +252,6 @@ export function PlacesList({
   const typesPresent = LISTING_TYPES.filter((t) => typeCounts[t.key] > 0);
 
   const selectedRestaurants = restaurants.filter((r) => selectedIds.has(r.id));
-
-  async function addFolder() {
-    if (!newFolderName.trim()) return;
-    setFolderBusy(true);
-    setFolderError(null);
-    const result = await createFolder(newFolderName);
-    setFolderBusy(false);
-    if (!result.success || !result.folderId) {
-      setFolderError(result.error ?? "Couldn't create folder.");
-      return;
-    }
-    const folder = { id: result.folderId, name: newFolderName.trim() };
-    setLocalFolders((f) => [...f, folder]);
-    setNewFolderName("");
-    setNewFolderOpen(false);
-    setFolderId(folder.id);
-    router.refresh();
-  }
 
   function closeMove() {
     setMoveTargets(null);
@@ -370,61 +350,6 @@ export function PlacesList({
             <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
           </svg>
         </button>
-      </div>
-
-      {/* Folder tabs across the top (Groove-style) */}
-      <div className="space-y-2">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-6 px-6">
-          <button
-            onClick={() => setFolderId(null)}
-            className={
-              folderId === null
-                ? "shrink-0 h-8 rounded-lg bg-lilac text-ink px-3.5 text-[13px] font-semibold flex items-center whitespace-nowrap"
-                : "shrink-0 h-8 rounded-lg bg-card border border-line text-mist px-3.5 text-[13px] font-medium flex items-center whitespace-nowrap"
-            }
-          >
-            All places
-          </button>
-          {localFolders.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setFolderId(folderId === f.id ? null : f.id)}
-              className={
-                folderId === f.id
-                  ? "shrink-0 h-8 rounded-lg bg-lilac text-ink px-3.5 text-[13px] font-semibold flex items-center whitespace-nowrap"
-                  : "shrink-0 h-8 rounded-lg bg-card border border-line text-mist px-3.5 text-[13px] font-medium flex items-center whitespace-nowrap"
-              }
-            >
-              {f.name} {folderCount(f.id)}
-            </button>
-          ))}
-          <button
-            onClick={() => setNewFolderOpen((v) => !v)}
-            className="shrink-0 h-8 rounded-lg bg-card border border-dashed border-line text-fog px-3.5 text-[13px] flex items-center whitespace-nowrap"
-          >
-            + New folder
-          </button>
-        </div>
-        {newFolderOpen ? (
-          <div className="flex gap-2">
-            <input
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder="Folder name"
-              className="flex-1 rounded-lg bg-card border border-line px-3 py-2 text-sm text-snow placeholder:text-fog/70 focus:outline-none"
-            />
-            <button
-              onClick={addFolder}
-              disabled={folderBusy || !newFolderName.trim()}
-              className="rounded-lg bg-coral text-ink px-4 py-2 text-sm font-semibold disabled:opacity-40"
-            >
-              {folderBusy ? "…" : "Create"}
-            </button>
-          </div>
-        ) : null}
-        {folderError ? (
-          <p className="text-xs text-coral">{folderError}</p>
-        ) : null}
       </div>
 
       {/* Filters + select toggle */}
@@ -632,6 +557,32 @@ export function PlacesList({
                       active={typeFilter === t.key}
                       onClick={() => setTypeFilter(t.key)}
                       label={`${t.emoji} ${t.label}s ${typeCounts[t.key]}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Folder */}
+            {localFolders.length > 0 ? (
+              <div className="space-y-1.5">
+                <p className="text-xs text-fog tracking-wide uppercase">
+                  Folder
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <FilterChip
+                    active={folderId === null}
+                    onClick={() => setFolderId(null)}
+                    label="All places"
+                  />
+                  {localFolders.map((f) => (
+                    <FilterChip
+                      key={f.id}
+                      active={folderId === f.id}
+                      onClick={() =>
+                        setFolderId(folderId === f.id ? null : f.id)
+                      }
+                      label={`${f.name} ${folderCount(f.id)}`}
                     />
                   ))}
                 </div>
