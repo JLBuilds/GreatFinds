@@ -138,16 +138,16 @@ export function SharedPlace({
           ) : (
             <div className="space-y-2">
               <Link
-                href="/login"
+                href="/request-access"
                 className="block w-full text-center bg-coral text-ink rounded-lg py-3 font-body font-semibold"
               >
-                Open in GreatFinds
+                Request access to save this
               </Link>
               <Link
-                href="/request-access"
+                href="/login"
                 className="block w-full text-center font-body text-sm text-fog hover:text-snow"
               >
-                New here? Request access →
+                Already have an account? Log in
               </Link>
             </div>
           )}
