@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { APIProvider } from "@vis.gl/react-google-maps";
 import { createRestaurant } from "../../actions";
 import {
   EMPTY_DRAFT,
   PlaceFields,
   type PlaceDraft,
 } from "../../_components/PlaceFields";
-import { PlaceLookup, type LookupResult } from "./PlaceLookup";
+import { PlaceAutocomplete, type LookupResult } from "./PlaceLookup";
+import { UrlIngest } from "./UrlIngest";
 import { placePhotoUrl, type Folder } from "@/lib/types";
 
 export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
@@ -66,6 +68,8 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
       ? placePhotoUrl(draft.photos[0], 800)
       : null;
 
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
   return (
     <main className="max-w-sm mx-auto px-6 pt-6 space-y-5">
       <header>
@@ -73,11 +77,28 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
           Add a place
         </h1>
         <p className="text-sm text-fog">
-          Search Google first — it fills everything in, photos included.
+          Paste a Google Maps link or search — it fills everything in, photos
+          included.
         </p>
       </header>
 
-      <PlaceLookup onSelect={applyLookup} />
+      {apiKey ? (
+        <APIProvider apiKey={apiKey}>
+          <div className="space-y-3">
+            <UrlIngest onResolved={applyLookup} />
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-line" />
+              <span className="text-xs text-fog">or search</span>
+              <div className="flex-1 h-px bg-line" />
+            </div>
+            <PlaceAutocomplete onSelect={applyLookup} />
+          </div>
+        </APIProvider>
+      ) : (
+        <p className="rounded-lg bg-card/60 px-4 py-3 text-xs text-fog">
+          Google lookup isn&apos;t configured — fill the fields in manually.
+        </p>
+      )}
 
       {heroUrl ? (
         // eslint-disable-next-line @next/next/no-img-element

@@ -242,7 +242,9 @@ export function PlaceFields({
                 ? "Desert safari"
                 : draft.type === "hotel"
                   ? "Beach resort"
-                  : "Lebanese"
+                  : draft.type === "shopping"
+                    ? "Boutique / mall"
+                    : "Lebanese"
             }
             className={inputCls}
           />

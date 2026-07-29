@@ -227,6 +227,63 @@ export async function savePlaceToMyList(
   return { success: true, id: data.id };
 }
 
+/** Expand and parse a pasted Google Maps link into a place name +
+ *  coordinates, so the Add screen can resolve it without a manual search.
+ *  Handles short share links (maps.app.goo.gl) by following the redirect. */
+export async function expandMapsUrl(url: string): Promise<{
+  ok: boolean;
+  name?: string;
+  lat?: number;
+  lng?: number;
+  error?: string;
+}> {
+  const raw = url?.trim();
+  if (!raw || !/^https?:\/\//i.test(raw)) {
+    return { ok: false, error: "Paste a full Google Maps link." };
+  }
+  try {
+    let finalUrl = raw;
+    // Expand short links (Google Maps app "Share" gives maps.app.goo.gl).
+    if (/(maps\.app\.goo\.gl|goo\.gl\/maps|g\.co\/kgs)/i.test(raw)) {
+      const res = await fetch(raw, {
+        redirect: "follow",
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; GreatFinds/1.0)" },
+      });
+      finalUrl = res.url || raw;
+    }
+
+    let name: string | undefined;
+    const placeMatch = finalUrl.match(/\/place\/([^/@?]+)/);
+    if (placeMatch) {
+      name = decodeURIComponent(placeMatch[1].replace(/\+/g, " ")).trim();
+    }
+
+    let lat: number | undefined;
+    let lng: number | undefined;
+    const at = finalUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (at) {
+      lat = parseFloat(at[1]);
+      lng = parseFloat(at[2]);
+    } else {
+      const q = finalUrl.match(/[?&](?:q|query|destination)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (q) {
+        lat = parseFloat(q[1]);
+        lng = parseFloat(q[2]);
+      }
+    }
+
+    if (!name && lat == null) {
+      return {
+        ok: false,
+        error: "Couldn't read that link — use the full Google Maps URL.",
+      };
+    }
+    return { ok: true, name, lat, lng };
+  } catch {
+    return { ok: false, error: "Couldn't open that link. Try again." };
+  }
+}
+
 export async function setRestaurantStatus(
   id: string,
   status: RestaurantStatus,

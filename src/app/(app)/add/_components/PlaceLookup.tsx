@@ -86,6 +86,21 @@ const HOTEL_TYPES = [
   "bed_and_breakfast",
   "hostel",
 ];
+const SHOPPING_TYPES = [
+  "store",
+  "shopping_mall",
+  "clothing_store",
+  "department_store",
+  "shoe_store",
+  "jewelry_store",
+  "book_store",
+  "electronics_store",
+  "furniture_store",
+  "home_goods_store",
+  "market",
+  "supermarket",
+  "boutique",
+];
 
 /** Guess a place's type from Google's categories. Food wins over hotel
  *  over experience if several appear. Defaults to restaurant. */
@@ -95,6 +110,9 @@ function suggestType(types: string[] | undefined): ListingType {
     return "restaurant";
   }
   if (types.some((t) => HOTEL_TYPES.includes(t))) return "hotel";
+  if (types.some((t) => SHOPPING_TYPES.includes(t) || t.endsWith("_store"))) {
+    return "shopping";
+  }
   if (types.some((t) => EXPERIENCE_TYPES.includes(t))) return "experience";
   return "restaurant";
 }
@@ -154,7 +172,7 @@ export function placeJsonToLookup(j: any): LookupResult {
   };
 }
 
-function AutocompleteInner({
+export function PlaceAutocomplete({
   onSelect,
 }: {
   onSelect: (r: LookupResult) => void;
@@ -231,7 +249,7 @@ export function PlaceLookup({
 
   return (
     <APIProvider apiKey={apiKey}>
-      <AutocompleteInner onSelect={onSelect} />
+      <PlaceAutocomplete onSelect={onSelect} />
     </APIProvider>
   );
 }

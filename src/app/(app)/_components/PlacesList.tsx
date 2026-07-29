@@ -244,6 +244,7 @@ export function PlacesList({
       restaurant: 0,
       experience: 0,
       hotel: 0,
+      shopping: 0,
     };
     for (const r of restaurants) c[r.type ?? "restaurant"]++;
     return c;

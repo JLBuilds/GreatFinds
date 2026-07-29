@@ -1,6 +1,6 @@
 export type RestaurantStatus = "want_to_try" | "been" | "favorite";
 
-export type ListingType = "restaurant" | "experience" | "hotel";
+export type ListingType = "restaurant" | "experience" | "hotel" | "shopping";
 
 export const LISTING_TYPES: Array<{
   key: ListingType;
@@ -10,6 +10,7 @@ export const LISTING_TYPES: Array<{
   { key: "restaurant", label: "Restaurant", emoji: "🍽" },
   { key: "experience", label: "Experience", emoji: "🎟" },
   { key: "hotel", label: "Hotel", emoji: "🏨" },
+  { key: "shopping", label: "Shopping", emoji: "🛍" },
 ];
 
 export type Restaurant = {
@@ -88,12 +89,19 @@ export const PRICE_BANDS_BY_TYPE: Record<ListingType, PriceBand[]> = {
     { level: 3, symbol: "$$$", range: "AED 1,000–2,500 / night" },
     { level: 4, symbol: "$$$$", range: "AED 2,500+ / night" },
   ],
+  shopping: [
+    { level: 1, symbol: "$", range: "Budget" },
+    { level: 2, symbol: "$$", range: "Mid-range" },
+    { level: 3, symbol: "$$$", range: "Premium" },
+    { level: 4, symbol: "$$$$", range: "Luxury" },
+  ],
 };
 
 const PRICE_THRESHOLDS: Record<ListingType, [number, number, number]> = {
   restaurant: [75, 200, 400],
   experience: [150, 400, 800],
   hotel: [500, 1000, 2500],
+  shopping: [75, 200, 400],
 };
 
 export function priceBands(type: ListingType | null | undefined): PriceBand[] {
