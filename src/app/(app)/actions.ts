@@ -253,7 +253,7 @@ export async function expandMapsUrl(url: string): Promise<{
     }
 
     let name: string | undefined;
-    const placeMatch = finalUrl.match(/\/place\/([^/@?]+)/);
+    const placeMatch = finalUrl.match(/\/(?:place|search)\/([^/@?]+)/);
     if (placeMatch) {
       name = decodeURIComponent(placeMatch[1].replace(/\+/g, " ")).trim();
     }
@@ -264,11 +264,26 @@ export async function expandMapsUrl(url: string): Promise<{
     if (at) {
       lat = parseFloat(at[1]);
       lng = parseFloat(at[2]);
-    } else {
-      const q = finalUrl.match(/[?&](?:q|query|destination)=(-?\d+\.\d+),(-?\d+\.\d+)/);
-      if (q) {
-        lat = parseFloat(q[1]);
-        lng = parseFloat(q[2]);
+    }
+
+    // Newer share links resolve to google.com/maps?q=<name + address>&ftid=…
+    // (or q=lat,lng). Read whichever form the q/query/destination param holds.
+    let qText: string | null = null;
+    try {
+      const params = new URL(finalUrl).searchParams;
+      qText = params.get("q") ?? params.get("query") ?? params.get("destination");
+    } catch {
+      /* not a parseable URL — fall through */
+    }
+    if (qText) {
+      const coords = qText.trim().match(/^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$/);
+      if (coords) {
+        if (lat == null) {
+          lat = parseFloat(coords[1]);
+          lng = parseFloat(coords[2]);
+        }
+      } else if (!name) {
+        name = qText.trim();
       }
     }
 
