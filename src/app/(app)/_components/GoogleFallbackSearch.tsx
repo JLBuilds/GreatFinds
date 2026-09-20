@@ -205,11 +205,33 @@ export function GoogleFallbackSearch({
   if (!apiKey || !query.trim()) return null;
   if (!auto && !open) {
     return (
+      // Same shape as the result rows it expands into.
       <button
         onClick={() => setOpen(true)}
-        className="w-full rounded-xl border border-line bg-card/60 py-3 text-sm text-fog hover:border-coral/60 hover:text-snow"
+        className="w-full flex items-center gap-3 rounded-xl bg-card border border-line p-3 text-left hover:border-coral/60"
       >
-        Not here? Search Google Maps for “{query}” →
+        <span className="w-10 h-10 rounded-lg bg-coral/15 text-coral flex items-center justify-center shrink-0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10Z"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinejoin="round"
+            />
+            <circle cx="12" cy="11" r="2.2" stroke="currentColor" strokeWidth="1.7" />
+          </svg>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-white">
+            Not what you&apos;re after?
+          </span>
+          <span className="block text-xs text-fog truncate">
+            Search Google Maps for “{query}”
+          </span>
+        </span>
+        <span className="text-coral text-xs font-semibold shrink-0">
+          Search →
+        </span>
       </button>
     );
   }
