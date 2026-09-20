@@ -13,6 +13,7 @@ import {
   type PlaceDraft,
 } from "../../../_components/PlaceFields";
 import { FetchPhotosButton } from "./FetchPhotosButton";
+import { LinkToGoogle } from "./LinkToGoogle";
 import { PlacePhoto } from "../../../_components/PlacePhoto";
 import { FolderPicker } from "./FolderPicker";
 import {
@@ -317,6 +318,11 @@ export function PlaceDetail({
             id={restaurant.id}
             placeId={restaurant.google_place_id}
           />
+        ) : null}
+
+        {/* Entries added by hand: attach the Google listing */}
+        {!restaurant.google_place_id ? (
+          <LinkToGoogle restaurant={restaurant} />
         ) : null}
 
         <div className="space-y-2">

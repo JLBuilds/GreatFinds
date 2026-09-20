@@ -11,13 +11,22 @@ import {
 import { placePhotoUrl } from "@/lib/types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Hit = { placeId: string; name: string; address: string | null; json: any };
+export type Hit = { placeId: string; name: string; address: string | null; json: any };
 
-type LatLng = { lat: number; lng: number };
+export type LatLng = { lat: number; lng: number };
 
-function Inner({ query, bias }: { query: string; bias: LatLng | null }) {
+type HitsProps = {
+  query: string;
+  bias: LatLng | null;
+  /** What tapping a result does. Return an error message to show, or null. */
+  onPick: (hit: Hit) => Promise<string | null>;
+  actionLabel: string;
+  busyLabel: string;
+  heading: string;
+};
+
+function Inner({ query, bias, onPick, actionLabel, busyLabel, heading }: HitsProps) {
   const places = useMapsLibrary("places");
-  const router = useRouter();
   const [hits, setHits] = useState<Hit[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [creatingId, setCreatingId] = useState<string | null>(null);
@@ -76,37 +85,13 @@ function Inner({ query, bias }: { query: string; bias: LatLng | null }) {
     })();
   }, [places, query, bias]);
 
-  async function create(hit: Hit) {
+  async function pick(hit: Hit) {
     setCreatingId(hit.placeId);
     setError(null);
-    const r = placeJsonToLookup(hit.json);
-    const result = await createRestaurant({
-      type: r.type,
-      name: r.name,
-      cuisine: r.cuisine,
-      area: r.area,
-      city: r.city,
-      country: r.country,
-      price_level: r.price_level,
-      price_range: r.price_range,
-      status: "want_to_try",
-      recommended_by: null,
-      notes: null,
-      link: r.website,
-      google_place_id: r.google_place_id,
-      google_maps_url: r.google_maps_url,
-      address: r.address,
-      lat: r.lat,
-      lng: r.lng,
-      photos: r.photos,
-      folder_id: null,
-    });
-    if (result.success && result.id) {
-      router.push(`/place/${result.id}`);
-      router.refresh();
-    } else {
+    const err = await onPick(hit);
+    if (err) {
       setCreatingId(null);
-      setError(result.error ?? "Couldn't create the listing.");
+      setError(err);
     }
   }
 
@@ -128,14 +113,14 @@ function Inner({ query, bias }: { query: string; bias: LatLng | null }) {
 
   return (
     <div className="space-y-2 text-left">
-      <p className="text-xs text-fog">From Google Maps — tap to add:</p>
+      <p className="text-xs text-fog">{heading}</p>
       {hits.map((h) => {
         const names = extractPhotoNames(h.json);
         const photo = names[0] ? placePhotoUrl(names[0], 120) : null;
         return (
           <button
             key={h.placeId}
-            onClick={() => create(h)}
+            onClick={() => pick(h)}
             disabled={!!creatingId}
             className="w-full flex items-center gap-3 rounded-xl bg-card border border-line p-3 text-left hover:border-coral/60 disabled:opacity-50"
           >
@@ -160,12 +145,24 @@ function Inner({ query, bias }: { query: string; bias: LatLng | null }) {
               ) : null}
             </div>
             <span className="text-coral text-xs font-semibold shrink-0">
-              {creatingId === h.placeId ? "Adding…" : "Add +"}
+              {creatingId === h.placeId ? busyLabel : actionLabel}
             </span>
           </button>
         );
       })}
     </div>
+  );
+}
+
+/** Google Maps text-search results with a per-row action. Reused by the
+ *  home fallback search (add) and the detail page (link). */
+export function GoogleHits(props: HitsProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey || !props.query.trim()) return null;
+  return (
+    <APIProvider apiKey={apiKey}>
+      <Inner {...props} />
+    </APIProvider>
   );
 }
 
@@ -186,6 +183,7 @@ export function GoogleFallbackSearch({
   auto?: boolean;
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [debounced, setDebounced] = useState(query);
 
@@ -241,8 +239,42 @@ export function GoogleFallbackSearch({
     );
   }
   return (
-    <APIProvider apiKey={apiKey}>
-      <Inner query={debounced.trim()} bias={bias} />
-    </APIProvider>
+    <GoogleHits
+      query={debounced.trim()}
+      bias={bias}
+      heading="From Google Maps — tap to add:"
+      actionLabel="Add +"
+      busyLabel="Adding…"
+      onPick={async (hit) => {
+        const r = placeJsonToLookup(hit.json);
+        const result = await createRestaurant({
+          type: r.type,
+          name: r.name,
+          cuisine: r.cuisine,
+          area: r.area,
+          city: r.city,
+          country: r.country,
+          price_level: r.price_level,
+          price_range: r.price_range,
+          status: "want_to_try",
+          recommended_by: null,
+          notes: null,
+          link: r.website,
+          google_place_id: r.google_place_id,
+          google_maps_url: r.google_maps_url,
+          address: r.address,
+          lat: r.lat,
+          lng: r.lng,
+          photos: r.photos,
+          folder_id: null,
+        });
+        if (result.success && result.id) {
+          router.push(`/place/${result.id}`);
+          router.refresh();
+          return null;
+        }
+        return result.error ?? "Couldn't create the listing.";
+      }}
+    />
   );
 }

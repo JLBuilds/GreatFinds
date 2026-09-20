@@ -196,6 +196,90 @@ export async function refreshPlacePhotos(
   return { success: true, photos };
 }
 
+/** Fields a Google lookup can contribute to an existing entry. */
+export type GoogleLinkInput = {
+  google_place_id: string;
+  google_maps_url?: string | null;
+  address?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  photos?: string[] | null;
+  cuisine?: string | null;
+  area?: string | null;
+  city?: string | null;
+  country?: string | null;
+  price_level?: number | null;
+  price_range?: string | null;
+  website?: string | null;
+};
+
+/** Attach a Google Maps listing to a place that was added by hand.
+ *  Always sets the Google identity (place id, map link, address, pin,
+ *  photos); fills cuisine/area/city/country/price/link only where the
+ *  entry is blank, so nothing the member typed is overwritten. Any
+ *  signed-in member may link; the write uses the service role because
+ *  RLS only lets the creator edit a row. */
+export async function linkPlaceToGoogle(
+  id: string,
+  input: GoogleLinkInput,
+): Promise<Result> {
+  if (!id || !input?.google_place_id) {
+    return { success: false, error: "Missing place." };
+  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not signed in." };
+
+  const admin = createAdminClient();
+  const { data: row, error: readError } = await admin
+    .from("restaurants")
+    .select(
+      "id, cuisine, area, city, country, price_level, price_range, link",
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (readError) return { success: false, error: readError.message };
+  if (!row) return { success: false, error: "Place not found." };
+
+  const photos = Array.isArray(input.photos)
+    ? input.photos.filter((p) => typeof p === "string" && p).slice(0, 8)
+    : [];
+  const level =
+    typeof input.price_level === "number" &&
+    input.price_level >= 1 &&
+    input.price_level <= 4
+      ? Math.round(input.price_level)
+      : null;
+  const patch: Record<string, unknown> = {
+    google_place_id: input.google_place_id,
+    google_maps_url: input.google_maps_url || null,
+    address: input.address?.trim() || null,
+    lat: typeof input.lat === "number" ? input.lat : null,
+    lng: typeof input.lng === "number" ? input.lng : null,
+  };
+  if (photos.length > 0) patch.photos = photos;
+  if (!row.cuisine && input.cuisine?.trim()) patch.cuisine = input.cuisine.trim();
+  if (!row.area && input.area?.trim()) patch.area = input.area.trim();
+  if (!row.city && input.city?.trim()) patch.city = input.city.trim();
+  if (!row.country && input.country?.trim()) patch.country = input.country.trim();
+  if (row.price_level == null && level != null) patch.price_level = level;
+  if (!row.price_range && input.price_range?.trim()) {
+    patch.price_range = input.price_range.trim();
+  }
+  if (!row.link && input.website?.trim()) patch.link = input.website.trim();
+
+  const { error } = await admin.from("restaurants").update(patch).eq("id", id);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/");
+  revalidatePath("/map");
+  revalidatePath(`/place/${id}`);
+  revalidatePath(`/s/${id}`);
+  return { success: true, id };
+}
+
 export async function setRestaurantFolder(
   id: string,
   folderId: string | null,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { refreshPlacePhotos } from "../actions";
 import { placePhotoUrl } from "@/lib/types";
@@ -31,6 +31,7 @@ function refreshOnce(restaurantId: string): Promise<string[] | null> {
 export function PlacePhoto({
   restaurantId,
   photoName,
+  googlePlaceId = null,
   index = 0,
   width,
   alt = "",
@@ -39,6 +40,8 @@ export function PlacePhoto({
 }: {
   restaurantId: string;
   photoName: string | null | undefined;
+  /** When set and there is no stored photo, fetch photos from Google once. */
+  googlePlaceId?: string | null;
   /** Which photo this slot shows, so a refresh swaps in the same slot. */
   index?: number;
   width: number;
@@ -63,6 +66,25 @@ export function PlacePhoto({
 
   const name = fresh ?? photoName ?? null;
   const src = name ? placePhotoUrl(name, width) : null;
+
+  // No stored photo but a Google listing: backfill once per page load.
+  const autoRef = useRef(false);
+  useEffect(() => {
+    if (photoName || !googlePlaceId || autoRef.current) return;
+    autoRef.current = true;
+    let cancelled = false;
+    refreshOnce(restaurantId).then((got) => {
+      if (cancelled) return;
+      const next = got?.[index] ?? got?.[0] ?? null;
+      if (next) {
+        setFresh(next);
+        router.refresh();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [photoName, googlePlaceId, restaurantId, index, router]);
   if (!src || failed) return <>{fallback}</>;
 
   async function onError() {

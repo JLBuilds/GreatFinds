@@ -438,6 +438,7 @@ export function PlacesList({
                 <PlacePhoto
                   restaurantId={r.id}
                   photoName={r.photos?.[0]}
+                  googlePlaceId={r.google_place_id}
                   width={400}
                   className="w-full h-full object-cover"
                   fallback={
