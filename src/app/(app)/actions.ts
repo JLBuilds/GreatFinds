@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchPlacePhotoNames } from "@/lib/google-places";
 import type { ListingType, RestaurantStatus } from "@/lib/types";
 
 export type RestaurantInput = {
@@ -145,6 +146,54 @@ export async function savePlaceMedia(
   revalidatePath("/");
   revalidatePath(`/place/${id}`);
   return { success: true, id };
+}
+
+/** Re-fetch a place's photos from Google and store them. Used by
+ *  <PlacePhoto> when a stored photo name no longer resolves (Google
+ *  rotates photo resource names, which blanked every header image).
+ *  Any signed-in member may trigger it; the update runs with the
+ *  service role because RLS only lets the creator edit a row. */
+export async function refreshPlacePhotos(
+  id: string,
+): Promise<{ success: boolean; photos?: string[]; error?: string }> {
+  if (!id) return { success: false, error: "Missing id." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not signed in." };
+
+  const admin = createAdminClient();
+  const { data: row, error: readError } = await admin
+    .from("restaurants")
+    .select("id, google_place_id, photos")
+    .eq("id", id)
+    .maybeSingle();
+  if (readError) return { success: false, error: readError.message };
+  if (!row?.google_place_id) {
+    return { success: false, error: "No Google place on this entry." };
+  }
+
+  const photos = await fetchPlacePhotoNames(row.google_place_id);
+  if (photos.length === 0) {
+    return { success: false, error: "Google had no photos for this place." };
+  }
+  const unchanged =
+    Array.isArray(row.photos) &&
+    row.photos.length === photos.length &&
+    row.photos.every((p: string, i: number) => p === photos[i]);
+  if (!unchanged) {
+    const { error } = await admin
+      .from("restaurants")
+      .update({ photos })
+      .eq("id", id);
+    if (error) return { success: false, error: error.message };
+    revalidatePath("/");
+    revalidatePath("/map");
+    revalidatePath(`/place/${id}`);
+    revalidatePath(`/s/${id}`);
+  }
+  return { success: true, photos };
 }
 
 export async function setRestaurantFolder(

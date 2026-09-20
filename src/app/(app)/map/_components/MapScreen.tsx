@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { PlacePhoto } from "../../_components/PlacePhoto";
 import {
   APIProvider,
   AdvancedMarker,
@@ -11,7 +12,6 @@ import {
   STATUS_META,
   extractUrl,
   initials,
-  placePhotoUrl,
   prettyDomain,
   priceLabel,
   type Restaurant,
@@ -166,21 +166,20 @@ export function MapScreen({ restaurants }: { restaurants: Restaurant[] }) {
       {/* Selected place sheet, per the design */}
       {open && openMeta ? (
         <div className="absolute left-4 right-4 bottom-4 max-w-sm mx-auto rounded-xl bg-ink border border-line p-4 shadow-[0_18px_44px_rgba(0,0,0,0.55)] flex gap-3.5 items-center">
-          {open.photos?.[0] && placePhotoUrl(open.photos[0], 200) ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={placePhotoUrl(open.photos[0], 200) as string}
-              alt=""
-              className="w-[64px] h-[64px] rounded-lg object-cover shrink-0"
-            />
-          ) : (
-            <div
-              className="w-[64px] h-[64px] rounded-lg flex items-center justify-center text-2xl font-semibold shrink-0"
-              style={{ backgroundColor: `${openMeta.pin}22`, color: openMeta.pin }}
-            >
-              {open.name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <PlacePhoto
+            restaurantId={open.id}
+            photoName={open.photos?.[0]}
+            width={200}
+            className="w-[64px] h-[64px] rounded-lg object-cover shrink-0"
+            fallback={
+              <div
+                className="w-[64px] h-[64px] rounded-lg flex items-center justify-center text-2xl font-semibold shrink-0"
+                style={{ backgroundColor: `${openMeta.pin}22`, color: openMeta.pin }}
+              >
+                {open.name.charAt(0).toUpperCase()}
+              </div>
+            }
+          />
           <div className="flex-1 flex flex-col gap-[3px] min-w-0">
             <span className="text-[17px] font-semibold text-white truncate">
               {open.name}

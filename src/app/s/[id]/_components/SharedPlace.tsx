@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { savePlaceToMyList } from "../../../(app)/actions";
+import { PlacePhoto } from "../../../(app)/_components/PlacePhoto";
 import {
   STATUS_META,
   placePhotoUrl,
@@ -49,8 +50,14 @@ export function SharedPlace({
     <main className="max-w-sm mx-auto pb-10">
       {heroUrl ? (
         <div className="relative h-52">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={heroUrl} alt={place.name} className="w-full h-full object-cover" />
+          <PlacePhoto
+            restaurantId={place.id}
+            photoName={photos[0]}
+            width={800}
+            alt={place.name}
+            className="w-full h-full object-cover"
+            fallback={<div className="w-full h-full bg-card" />}
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/30 to-transparent" />
         </div>
       ) : null}
@@ -92,16 +99,17 @@ export function SharedPlace({
 
         {gallery.length > 0 ? (
           <div className="grid grid-cols-4 gap-2">
-            {gallery.map((p) => {
-              const url = placePhotoUrl(p, 400);
-              if (!url) return null;
-              return (
-                <div key={p} className="aspect-square rounded-lg overflow-hidden border border-line">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="" className="w-full h-full object-cover" />
-                </div>
-              );
-            })}
+            {gallery.map((p, i) => (
+              <div key={p} className="aspect-square rounded-lg overflow-hidden border border-line">
+                <PlacePhoto
+                  restaurantId={place.id}
+                  photoName={p}
+                  index={i + 1}
+                  width={400}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
           </div>
         ) : null}
 

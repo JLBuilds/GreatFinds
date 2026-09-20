@@ -13,6 +13,7 @@ import {
   type PlaceDraft,
 } from "../../../_components/PlaceFields";
 import { FetchPhotosButton } from "./FetchPhotosButton";
+import { PlacePhoto } from "../../../_components/PlacePhoto";
 import { FolderPicker } from "./FolderPicker";
 import {
   STATUS_META,
@@ -203,11 +204,13 @@ export function PlaceDetail({
       {/* Hero header image */}
       {heroUrl ? (
         <div className="relative h-52">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={heroUrl}
+          <PlacePhoto
+            restaurantId={restaurant.id}
+            photoName={photos[0]}
+            width={800}
             alt={restaurant.name}
             className="w-full h-full object-cover"
+            fallback={<div className="w-full h-full bg-card" />}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/30 to-transparent" />
           <Link
@@ -290,20 +293,21 @@ export function PlaceDetail({
         {/* Photo gallery */}
         {gallery.length > 0 ? (
           <div className="grid grid-cols-4 gap-2">
-            {gallery.map((p) => {
-              const url = placePhotoUrl(p, 400);
-              if (!url) return null;
-              return (
-                <button
-                  key={p}
-                  onClick={() => setLightbox(placePhotoUrl(p, 1200))}
-                  className="aspect-square rounded-lg overflow-hidden border border-line"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="" className="w-full h-full object-cover" />
-                </button>
-              );
-            })}
+            {gallery.map((p, i) => (
+              <button
+                key={p}
+                onClick={() => setLightbox(placePhotoUrl(p, 1200))}
+                className="aspect-square rounded-lg overflow-hidden border border-line"
+              >
+                <PlacePhoto
+                  restaurantId={restaurant.id}
+                  photoName={p}
+                  index={i + 1}
+                  width={400}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
           </div>
         ) : null}
 
