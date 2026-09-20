@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createFolder, setRestaurantFolder } from "../actions";
 import { GoogleFallbackSearch } from "./GoogleFallbackSearch";
+import { PlacePhoto } from "./PlacePhoto";
 import {
   LISTING_TYPES,
   STATUS_META,
   extractUrl,
   initials,
-  placePhotoUrl,
   prettyDomain,
   priceLabel,
   priceLevelOf,
@@ -117,6 +117,18 @@ export function PlacesList({
     { key: "been", label: `Been ${counts.been}` },
     { key: "favorite", label: `Favourites ${counts.favorite}` },
   ];
+
+  // Where to centre Google searches: the user's location if we have it,
+  // otherwise the middle of their saved places.
+  const searchBias = useMemo(() => {
+    if (userLoc) return userLoc;
+    const pts = restaurants.filter((r) => r.lat != null && r.lng != null);
+    if (pts.length === 0) return null;
+    return {
+      lat: pts.reduce((s, r) => s + (r.lat as number), 0) / pts.length,
+      lng: pts.reduce((s, r) => s + (r.lng as number), 0) / pts.length,
+    };
+  }, [userLoc, restaurants]);
 
   const folderCount = (id: string) =>
     restaurants.filter((r) => r.folder_id === id).length;
@@ -399,8 +411,6 @@ export function PlacesList({
           // Attribution shows only who recommended it (no "added by" —
           // the owner adds everything).
           const who = r.recommended_by;
-          const thumb =
-            r.photos && r.photos[0] ? placePhotoUrl(r.photos[0], 400) : null;
           // Badge shows the folder name when filed, else the status.
           const folderName = r.folder_id
             ? folderNameById[r.folder_id]
@@ -425,24 +435,23 @@ export function PlacesList({
               }
             >
               <div className="relative h-24">
-                {thumb ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={thumb}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center text-2xl font-semibold"
-                    style={{
-                      backgroundColor: `${meta.pin}22`,
-                      color: meta.pin,
-                    }}
-                  >
-                    {r.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <PlacePhoto
+                  restaurantId={r.id}
+                  photoName={r.photos?.[0]}
+                  width={400}
+                  className="w-full h-full object-cover"
+                  fallback={
+                    <div
+                      className="w-full h-full flex items-center justify-center text-2xl font-semibold"
+                      style={{
+                        backgroundColor: `${meta.pin}22`,
+                        color: meta.pin,
+                      }}
+                    >
+                      {r.name.charAt(0).toUpperCase()}
+                    </div>
+                  }
+                />
                 <span
                   className="absolute left-2 top-2 max-w-[calc(100%-16px)] h-5 rounded-md px-1.5 text-[10px] font-semibold uppercase tracking-[0.05em] flex items-center truncate"
                   style={{
@@ -516,8 +525,16 @@ export function PlacesList({
               ? `Nothing saved matches “${query.trim()}”.`
               : "Nothing here yet — try a different folder or filter."}
           </p>
-          {query.trim() ? <GoogleFallbackSearch query={query.trim()} /> : null}
+          {query.trim() ? (
+            <GoogleFallbackSearch query={query.trim()} bias={searchBias} />
+          ) : null}
         </div>
+      ) : query.trim() ? (
+        <GoogleFallbackSearch
+          query={query.trim()}
+          bias={searchBias}
+          auto={false}
+        />
       ) : null}
 
       {/* Filters sheet */}

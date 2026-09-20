@@ -13,7 +13,9 @@ import { placePhotoUrl } from "@/lib/types";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Hit = { placeId: string; name: string; address: string | null; json: any };
 
-function Inner({ query }: { query: string }) {
+type LatLng = { lat: number; lng: number };
+
+function Inner({ query, bias }: { query: string; bias: LatLng | null }) {
   const places = useMapsLibrary("places");
   const router = useRouter();
   const [hits, setHits] = useState<Hit[] | null>(null);
@@ -31,8 +33,10 @@ function Inner({ query }: { query: string }) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { Place } = places as any;
-        const { places: results } = await Place.searchByText({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const req: any = {
           textQuery: query,
+          maxResultCount: 5,
           fields: [
             "id",
             "displayName",
@@ -46,8 +50,11 @@ function Inner({ query }: { query: string }) {
             "addressComponents",
             "photos",
           ],
-          maxResultCount: 5,
-        });
+        };
+        // Prefer places near the user (or near their saved places) so
+        // "Nobu" finds the local one, not the one in Malibu.
+        if (bias) req.locationBias = { center: bias, radius: 50_000 };
+        const { places: results } = await Place.searchByText(req);
         if (myReq !== reqRef.current) return;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mapped: Hit[] = (results ?? []).map((p: any) => {
@@ -67,7 +74,7 @@ function Inner({ query }: { query: string }) {
         if (myReq === reqRef.current) setLoading(false);
       }
     })();
-  }, [places, query]);
+  }, [places, query, bias]);
 
   async function create(hit: Hit) {
     setCreatingId(hit.placeId);
@@ -162,25 +169,58 @@ function Inner({ query }: { query: string }) {
   );
 }
 
-/** Shown in the home empty-state: when a search matches nothing saved,
- *  offer to search Google Maps and create a listing from a result. */
-export function GoogleFallbackSearch({ query }: { query: string }) {
+/** Google Maps results for a list search, with "tap to add".
+ *
+ *  - `auto` (default): runs as soon as the user pauses typing — used when
+ *    nothing saved matches, so the place they're after just shows up.
+ *  - `auto={false}`: a quiet "Not here?" button that expands on tap — used
+ *    under partial matches, where Google results would be noise by default.
+ *  `bias` centres the search (user location, or where their places are). */
+export function GoogleFallbackSearch({
+  query,
+  bias = null,
+  auto = true,
+}: {
+  query: string;
+  bias?: LatLng | null;
+  auto?: boolean;
+}) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const [open, setOpen] = useState(false);
+  const [debounced, setDebounced] = useState(query);
+
+  // Wait for a pause in typing before hitting Google.
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query), 450);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  // A new query collapses the manual variant back to its button.
+  const [lastQuery, setLastQuery] = useState(query);
+  if (lastQuery !== query) {
+    setLastQuery(query);
+    if (!auto) setOpen(false);
+  }
+
   if (!apiKey || !query.trim()) return null;
-  if (!open) {
+  if (!auto && !open) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="w-full rounded-xl bg-coral text-ink py-3 text-sm font-semibold hover:opacity-90"
+        className="w-full rounded-xl border border-line bg-card/60 py-3 text-sm text-fog hover:border-coral/60 hover:text-snow"
       >
-        Search Google Maps for “{query}” →
+        Not here? Search Google Maps for “{query}” →
       </button>
+    );
+  }
+  if (debounced.trim() !== query.trim()) {
+    return (
+      <p className="text-sm text-fog text-center py-3">Searching Google Maps…</p>
     );
   }
   return (
     <APIProvider apiKey={apiKey}>
-      <Inner query={query} />
+      <Inner query={debounced.trim()} bias={bias} />
     </APIProvider>
   );
 }
