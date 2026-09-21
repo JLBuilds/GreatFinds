@@ -71,6 +71,8 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lookedUp, setLookedUp] = useState(false);
+  // Only honour ?place= once, so "Change place" doesn't re-prefill.
+  const [prefillDone, setPrefillDone] = useState(false);
 
   function applyLookup(r: LookupResult) {
     setDraft((d) => ({
@@ -94,6 +96,13 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
       photos: r.photos.length > 0 ? r.photos : d.photos,
     }));
     setLookedUp(true);
+    setPrefillDone(true);
+  }
+
+  function changePlace() {
+    setDraft(EMPTY_DRAFT);
+    setLookedUp(false);
+    setError(null);
   }
 
   async function save() {
@@ -135,60 +144,84 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
         <button
           type="submit"
           form="add-place-form"
-          disabled={saving || !draft.name.trim()}
+          disabled={saving || !lookedUp || !draft.name.trim()}
           className="rounded-lg bg-coral text-ink px-4 py-1.5 text-sm font-semibold disabled:opacity-40"
         >
           {saving ? "Saving…" : "Save"}
         </button>
       </div>
 
-      <header>
-        <p className="text-sm text-fog">
-          {prefillId
-            ? "Details from Google Maps are filled in below. Adjust anything, then save."
-            : "Paste a Google Maps link or search — it fills everything in, photos included."}
-        </p>
-      </header>
+      {!lookedUp ? (
+        <>
+          <header>
+            <p className="text-sm text-fog">
+              {prefillId && !prefillDone
+                ? "Loading details from Google Maps…"
+                : "Search Google Maps or paste a link. Name, address, photos and price come from there — you add the tag and your notes."}
+            </p>
+          </header>
 
-      {apiKey ? (
-        <APIProvider apiKey={apiKey}>
-          {prefillId && !lookedUp ? (
-            <PrefillFromPlaceId
-              placeId={prefillId}
-              onResolved={applyLookup}
-              onError={setError}
-            />
+          {apiKey ? (
+            <APIProvider apiKey={apiKey}>
+              {prefillId && !prefillDone ? (
+                <PrefillFromPlaceId
+                  placeId={prefillId}
+                  onResolved={applyLookup}
+                  onError={(msg) => {
+                    setPrefillDone(true);
+                    setError(msg);
+                  }}
+                />
+              ) : null}
+              <div className="space-y-3">
+                <PlaceAutocomplete onSelect={applyLookup} />
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-line" />
+                  <span className="text-xs text-fog">or paste a link</span>
+                  <div className="flex-1 h-px bg-line" />
+                </div>
+                <UrlIngest onResolved={applyLookup} />
+              </div>
+            </APIProvider>
+          ) : (
+            <p className="rounded-lg bg-card/60 px-4 py-3 text-xs text-fog">
+              Google lookup isn&apos;t configured.
+            </p>
+          )}
+          {error ? (
+            <p className="font-body text-sm text-coral text-center">{error}</p>
           ) : null}
-          <div className="space-y-3">
-            <UrlIngest onResolved={applyLookup} />
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-line" />
-              <span className="text-xs text-fog">or search</span>
-              <div className="flex-1 h-px bg-line" />
-            </div>
-            <PlaceAutocomplete onSelect={applyLookup} />
-          </div>
-        </APIProvider>
-      ) : (
-        <p className="rounded-lg bg-card/60 px-4 py-3 text-xs text-fog">
-          Google lookup isn&apos;t configured — fill the fields in manually.
-        </p>
-      )}
-
-      {heroUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={heroUrl}
-          alt={draft.name}
-          className="w-full h-40 object-cover rounded-xl border border-line"
-        />
+        </>
       ) : null}
 
       {lookedUp ? (
-        <p className="font-body text-xs text-warm">
-          ✓ Found it — details{draft.photos?.length ? " and photos" : ""}{" "}
-          filled in below. Adjust anything, then save.
-        </p>
+        <div className="rounded-xl bg-card border border-line overflow-hidden">
+          {heroUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={heroUrl}
+              alt={draft.name}
+              className="w-full h-36 object-cover"
+            />
+          ) : null}
+          <div className="p-3 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-body text-xs text-warm">✓ From Google Maps</p>
+              <p className="font-body text-xs text-fog truncate">
+                {[draft.cuisine, draft.area, draft.city]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={changePlace}
+              className="shrink-0 font-body text-xs text-coral font-semibold"
+            >
+              Change
+            </button>
+          </div>
+        </div>
       ) : null}
 
       <form
@@ -197,9 +230,9 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
           e.preventDefault();
           if (!saving) save();
         }}
-        className="space-y-5"
+        className={lookedUp ? "space-y-5" : "hidden"}
       >
-        <PlaceFields draft={draft} onChange={setDraft} folders={folders} />
+        <PlaceFields draft={draft} onChange={setDraft} folders={folders} compact />
 
         {error ? (
           <p className="font-body text-sm text-coral text-center">{error}</p>

@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdmin } from "@/lib/admin";
 import { fetchPlaceDetails, fetchPlacePhotoNames } from "@/lib/google-places";
 import { needsSync } from "@/lib/hours";
-import type { ListingType, RestaurantStatus } from "@/lib/types";
+import { extractUrl, type ListingType, type RestaurantStatus } from "@/lib/types";
 
 export type RestaurantInput = {
   type: ListingType;
@@ -60,7 +60,8 @@ function clean(input: RestaurantInput): RestaurantInput | { error: string } {
     status: input.status,
     recommended_by: input.recommended_by?.trim() || null,
     notes: input.notes?.trim() || null,
-    link: input.link?.trim() || null,
+    // A URL pasted into the notes doubles as the link when none is set.
+    link: input.link?.trim() || extractUrl(input.notes) || null,
     google_place_id: input.google_place_id || null,
     google_maps_url: input.google_maps_url || null,
     address: input.address?.trim() || null,

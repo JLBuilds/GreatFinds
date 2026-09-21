@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import {
+  extractUrl,
   priceBands,
   type Folder,
   type ListingType,
@@ -68,10 +69,13 @@ export function PlaceFields({
   draft,
   onChange,
   folders,
+  compact = false,
 }: {
   draft: PlaceDraft;
   onChange: (next: PlaceDraft) => void;
   folders: Folder[];
+  /** Hide the fields Google fills in (cuisine, area, city, country). */
+  compact?: boolean;
 }) {
   const set = (patch: Partial<PlaceDraft>) => onChange({ ...draft, ...patch });
   const [localFolders, setLocalFolders] = useState<Folder[]>(folders);
@@ -197,6 +201,8 @@ export function PlaceFields({
         ) : null}
       </div>
 
+      {!compact ? (
+        <>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label htmlFor="pf-cuisine" className={labelCls}>
@@ -258,6 +264,8 @@ export function PlaceFields({
           />
         </div>
       </div>
+        </>
+      ) : null}
 
       <div className="space-y-1.5">
         <span className={labelCls}>Price</span>
@@ -308,7 +316,12 @@ export function PlaceFields({
           id="pf-notes"
           rows={3}
           value={draft.notes}
-          onChange={(e) => set({ notes: e.target.value })}
+          onChange={(e) => {
+            const notes = e.target.value;
+            // A URL in the notes becomes the link too, unless one is set.
+            const link = draft.link || extractUrl(notes) || "";
+            set({ notes, link });
+          }}
           placeholder="Get the mixed grill. Book ahead on weekends."
           className={inputCls}
         />
