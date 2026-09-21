@@ -14,6 +14,8 @@ import {
 } from "../../../_components/PlaceFields";
 import { FetchPhotosButton } from "./FetchPhotosButton";
 import { LinkToGoogle } from "./LinkToGoogle";
+import { HoursAndAmenities } from "./HoursAndAmenities";
+import { MeetHere, directionsUrl } from "./MeetHere";
 import { PlacePhoto } from "../../../_components/PlacePhoto";
 import { FolderPicker } from "./FolderPicker";
 import { LinkedText } from "@/components/LinkedText";
@@ -101,6 +103,7 @@ export function PlaceDetail({
   const heroUrl = photos[0] ? placePhotoUrl(photos[0], 800) : null;
   const gallery = photos.slice(1, 5);
 
+  const dirUrl = directionsUrl(restaurant);
   const mapsUrl =
     restaurant.google_maps_url ??
     (restaurant.lat != null && restaurant.lng != null
@@ -311,6 +314,7 @@ export function PlaceDetail({
               📍 {restaurant.address}
             </p>
           ) : null}
+          <HoursAndAmenities place={restaurant} />
           {!isOwner && folderName ? (
             <span className="inline-flex items-center gap-1 rounded-md bg-lilac/20 text-lilac px-2 py-1 font-body text-[11px] font-semibold uppercase tracking-[0.06em]">
               📁 {folderName}
@@ -375,12 +379,27 @@ export function PlaceDetail({
         ) : null}
 
         <div className="space-y-2">
+          {dirUrl ? (
+            <a
+              href={dirUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 bg-coral text-ink rounded-lg py-3 font-body font-semibold hover:opacity-90"
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 2.5 21.5 12 12 21.5 2.5 12 12 2.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                <path d="M9 13.5v-2a1 1 0 0 1 1-1h4.5M13 8.5l2.5 2-2.5 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Directions
+            </a>
+          ) : null}
+          <MeetHere place={restaurant} />
           {mapsUrl ? (
             <a
               href={mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full text-center bg-coral text-ink rounded-lg py-3 font-body font-semibold hover:opacity-90"
+              className="block w-full text-center bg-card border border-line text-snow rounded-lg py-3 font-body font-medium hover:bg-card/80"
             >
               Open in Google Maps →
             </a>

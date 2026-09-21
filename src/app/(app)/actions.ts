@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdmin } from "@/lib/admin";
-import { fetchPlacePhotoNames } from "@/lib/google-places";
+import { fetchPlaceDetails, fetchPlacePhotoNames } from "@/lib/google-places";
+import { needsSync } from "@/lib/hours";
 import type { ListingType, RestaurantStatus } from "@/lib/types";
 
 export type RestaurantInput = {
@@ -282,6 +283,50 @@ export async function linkPlaceToGoogle(
 
   revalidatePath("/");
   revalidatePath("/map");
+  revalidatePath(`/place/${id}`);
+  revalidatePath(`/s/${id}`);
+  return { success: true, id };
+}
+
+/** Pull hours, phone and amenities from Google into the row (at most
+ *  once a day unless `force`). Any signed-in member may trigger it; the
+ *  write uses the service role. Fails quietly (no Google call) if
+ *  migration 0007 hasn't been applied yet. */
+export async function syncPlaceDetails(
+  id: string,
+  force = false,
+): Promise<Result> {
+  if (!id) return { success: false, error: "Missing id." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not signed in." };
+
+  const admin = createAdminClient();
+  const { data: row, error: readError } = await admin
+    .from("restaurants")
+    .select("id, google_place_id, google_synced_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (readError) return { success: false, error: readError.message };
+  if (!row?.google_place_id) {
+    return { success: false, error: "No Google place on this entry." };
+  }
+  if (!force && !needsSync(row.google_synced_at, 24 * 3600 * 1000)) {
+    return { success: true, id };
+  }
+
+  const details = await fetchPlaceDetails(row.google_place_id);
+  if (!details) return { success: false, error: "Google lookup failed." };
+
+  const { error } = await admin
+    .from("restaurants")
+    .update({ ...details, google_synced_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/");
   revalidatePath(`/place/${id}`);
   revalidatePath(`/s/${id}`);
   return { success: true, id };

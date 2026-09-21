@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
 import type { Folder, Restaurant } from "@/lib/types";
 import { PlaceDetail } from "./_components/PlaceDetail";
+import { PlaceSync } from "../../_components/PlaceSync";
+import { needsSync } from "@/lib/hours";
 
 export default async function PlacePage({
   params,
@@ -26,11 +28,16 @@ export default async function PlacePage({
   // Admins can edit and delete anyone's entry.
   const isOwner = admin || userRes.data.user?.id === r.created_by;
 
+  const stale = Boolean(r.google_place_id) && needsSync(r.google_synced_at);
+
   return (
-    <PlaceDetail
-      restaurant={r}
-      isOwner={isOwner}
-      folders={(folders ?? []) as Folder[]}
-    />
+    <>
+      {stale ? <PlaceSync ids={[r.id]} /> : null}
+      <PlaceDetail
+        restaurant={r}
+        isOwner={isOwner}
+        folders={(folders ?? []) as Folder[]}
+      />
+    </>
   );
 }

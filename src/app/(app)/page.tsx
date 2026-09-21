@@ -7,6 +7,8 @@ import {
   type Restaurant,
 } from "@/lib/types";
 import { PlacesList } from "./_components/PlacesList";
+import { PlaceSync } from "./_components/PlaceSync";
+import { needsSync } from "@/lib/hours";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -27,6 +29,12 @@ export default async function HomePage() {
   for (const p of (profiles ?? []) as Profile[]) {
     names[p.user_id] = p.display_name;
   }
+
+  // Keep hours/amenities fresh a few places at a time.
+  const staleIds = ((restaurants ?? []) as Restaurant[])
+    .filter((r) => r.google_place_id && needsSync(r.google_synced_at))
+    .slice(0, 6)
+    .map((r) => r.id);
 
   const me = userRes.data.user;
   const myName = me ? (names[me.id] ?? me.email ?? "") : "";
@@ -53,6 +61,7 @@ export default async function HomePage() {
         </Link>
       </header>
 
+      {staleIds.length > 0 ? <PlaceSync ids={staleIds} /> : null}
       <PlacesList
         restaurants={(restaurants ?? []) as Restaurant[]}
         folders={(folders ?? []) as Folder[]}

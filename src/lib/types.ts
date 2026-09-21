@@ -1,3 +1,5 @@
+import type { Amenities, OpeningHours } from "@/lib/hours";
+
 export type RestaurantStatus = "want_to_try" | "been" | "favorite";
 
 export type ListingType = "restaurant" | "experience" | "hotel" | "shopping";
@@ -35,6 +37,12 @@ export type Restaurant = {
   lng: number | null;
   photos: string[] | null;
   folder_id: string | null;
+  // Synced from Google Places (migration 0007); absent until first sync.
+  opening_hours?: OpeningHours | null;
+  utc_offset_minutes?: number | null;
+  amenities?: Amenities | null;
+  phone?: string | null;
+  google_synced_at?: string | null;
   created_at: string;
   updated_at: string;
 };

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createFolder, deleteRestaurants, setRestaurantFolder } from "../actions";
 import { GoogleFallbackSearch } from "./GoogleFallbackSearch";
 import { PlacePhoto } from "./PlacePhoto";
+import { openStatus } from "@/lib/hours";
 import {
   LISTING_TYPES,
   STATUS_META,
@@ -79,6 +80,7 @@ export function PlacesList({
   const [cityFilter, setCityFilter] = useState<string | null>(null);
   const [areaFilter, setAreaFilter] = useState<string | null>(null);
   const [radiusKm, setRadiusKm] = useState<number | null>(null);
+  const [openNow, setOpenNow] = useState(false);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(
     null,
   );
@@ -161,6 +163,10 @@ export function PlacesList({
         if (haversineKm(userLoc, { lat: r.lat, lng: r.lng }) > radiusKm)
           return false;
       }
+      if (openNow) {
+        const st = openStatus(r.opening_hours, r.utc_offset_minutes);
+        if (!st?.isOpen) return false;
+      }
       if (!q) return true;
       return [r.name, r.cuisine, r.area, r.city, r.recommended_by, r.notes]
         .filter(Boolean)
@@ -177,6 +183,7 @@ export function PlacesList({
     areaFilter,
     radiusKm,
     userLoc,
+    openNow,
     query,
   ]);
 
@@ -213,9 +220,11 @@ export function PlacesList({
     (folderId !== null ? 1 : 0) +
     (priceFilter !== null ? 1 : 0) +
     (countryFilter || cityFilter || areaFilter ? 1 : 0) +
-    (radiusKm !== null ? 1 : 0);
+    (radiusKm !== null ? 1 : 0) +
+    (openNow ? 1 : 0);
 
   function clearFilters() {
+    setOpenNow(false);
     setFilter("all");
     setTypeFilter("all");
     setFolderId(null);
@@ -742,6 +751,25 @@ export function PlacesList({
                 </div>
               </div>
             ) : null}
+
+            {/* Open now */}
+            <div className="space-y-1.5">
+              <p className="text-xs text-fog tracking-wide uppercase">
+                Right now
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <FilterChip
+                  active={openNow}
+                  onClick={() => setOpenNow((v) => !v)}
+                  label="Open now"
+                />
+              </div>
+              {openNow ? (
+                <p className="text-xs text-fog">
+                  Hides places whose hours Google doesn&apos;t list.
+                </p>
+              ) : null}
+            </div>
 
             {/* Near me */}
             <div className="space-y-1.5">
