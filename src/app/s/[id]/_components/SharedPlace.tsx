@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { savePlaceToMyList } from "../../../(app)/actions";
 import { PlacePhoto } from "../../../(app)/_components/PlacePhoto";
+import { LinkedText } from "@/components/LinkedText";
 import {
   STATUS_META,
   placePhotoUrl,
@@ -91,8 +92,8 @@ export function SharedPlace({
 
         {place.notes ? (
           <div className="rounded-xl bg-card border border-line p-4">
-            <p className="font-body text-sm text-snow whitespace-pre-wrap leading-relaxed">
-              {place.notes}
+            <p className="font-body text-sm text-snow whitespace-pre-wrap leading-relaxed break-words">
+              <LinkedText text={place.notes} />
             </p>
           </div>
         ) : null}

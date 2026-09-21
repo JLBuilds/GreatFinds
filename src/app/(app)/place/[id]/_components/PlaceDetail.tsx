@@ -16,35 +16,15 @@ import { FetchPhotosButton } from "./FetchPhotosButton";
 import { LinkToGoogle } from "./LinkToGoogle";
 import { PlacePhoto } from "../../../_components/PlacePhoto";
 import { FolderPicker } from "./FolderPicker";
+import { LinkedText } from "@/components/LinkedText";
 import {
   STATUS_META,
   placePhotoUrl,
-  prettyDomain,
   priceLabel,
   type Folder,
   type Restaurant,
   type RestaurantStatus,
 } from "@/lib/types";
-
-/** Render text, turning any http(s) URL into a clickable link labelled
- *  by its domain (so a long article URL reads cleanly). */
-function withLinks(text: string) {
-  return text.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
-    /^https?:\/\//.test(part) ? (
-      <a
-        key={i}
-        href={part}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-coral underline underline-offset-2"
-      >
-        {prettyDomain(part)}
-      </a>
-    ) : (
-      <span key={i}>{part}</span>
-    ),
-  );
-}
 
 function toDraft(r: Restaurant): PlaceDraft {
   return {
@@ -279,14 +259,14 @@ export function PlaceDetail({
 
         {restaurant.recommended_by ? (
           <p className="font-body text-sm text-mist break-words">
-            Recommended by {withLinks(restaurant.recommended_by)}
+            Recommended by <LinkedText text={restaurant.recommended_by} />
           </p>
         ) : null}
 
         {restaurant.notes ? (
           <div className="rounded-xl bg-card border border-line p-4">
-            <p className="font-body text-sm text-snow whitespace-pre-wrap leading-relaxed">
-              {restaurant.notes}
+            <p className="font-body text-sm text-snow whitespace-pre-wrap leading-relaxed break-words">
+              <LinkedText text={restaurant.notes} />
             </p>
           </div>
         ) : null}
