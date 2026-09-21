@@ -52,6 +52,7 @@ function Inner({ query, bias, onPick, actionLabel, busyLabel, heading }: HitsPro
             "priceRange",
             "types",
             "websiteURI",
+            "editorialSummary",
             "addressComponents",
             "photos",
           ],

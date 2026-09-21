@@ -20,6 +20,8 @@ export type LookupResult = {
   city: string | null;
   country: string | null;
   website: string | null;
+  /** Google's short editorial blurb, when it has one. */
+  summary: string | null;
   photos: string[];
 };
 
@@ -168,6 +170,10 @@ export function placeJsonToLookup(j: any): LookupResult {
       componentText(j.addressComponents, "administrative_area_level_2"),
     country: componentText(j.addressComponents, "country"),
     website: j.websiteURI ?? null,
+    summary:
+      typeof j.editorialSummary === "string"
+        ? j.editorialSummary.trim() || null
+        : (j.editorialSummary?.text?.trim() ?? null),
     photos: extractPhotoNames(j),
   };
 }
@@ -208,6 +214,7 @@ export function PlaceAutocomplete({
             "priceRange",
             "types",
             "websiteURI",
+            "editorialSummary",
             "addressComponents",
             "photos",
           ],

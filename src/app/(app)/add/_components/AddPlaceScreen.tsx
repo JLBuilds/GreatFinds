@@ -28,6 +28,7 @@ const PLACE_FIELDS = [
   "priceRange",
   "types",
   "websiteURI",
+  "editorialSummary",
   "addressComponents",
   "photos",
 ];
@@ -83,6 +84,8 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
       price_level: r.price_level ?? d.price_level,
       price_range: r.price_range ?? d.price_range,
       link: d.link || (r.website ?? ""),
+      // Google's blurb seeds the notes; the field stays editable.
+      notes: d.notes || (r.summary ?? ""),
       google_place_id: r.google_place_id,
       google_maps_url: r.google_maps_url,
       address: r.address,

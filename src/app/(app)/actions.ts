@@ -216,6 +216,7 @@ export type GoogleLinkInput = {
   price_level?: number | null;
   price_range?: string | null;
   website?: string | null;
+  summary?: string | null;
 };
 
 /** Attach a Google Maps listing to a place that was added by hand.
@@ -241,7 +242,7 @@ export async function linkPlaceToGoogle(
   const { data: row, error: readError } = await admin
     .from("restaurants")
     .select(
-      "id, cuisine, area, city, country, price_level, price_range, link",
+      "id, cuisine, area, city, country, price_level, price_range, link, notes",
     )
     .eq("id", id)
     .maybeSingle();
@@ -274,6 +275,7 @@ export async function linkPlaceToGoogle(
     patch.price_range = input.price_range.trim();
   }
   if (!row.link && input.website?.trim()) patch.link = input.website.trim();
+  if (!row.notes && input.summary?.trim()) patch.notes = input.summary.trim();
 
   const { error } = await admin.from("restaurants").update(patch).eq("id", id);
   if (error) return { success: false, error: error.message };

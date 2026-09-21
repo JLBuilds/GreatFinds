@@ -104,6 +104,7 @@ export function LinkToGoogle({ restaurant }: { restaurant: Restaurant }) {
             price_level: r.price_level,
             price_range: r.price_range,
             website: r.website,
+            summary: r.summary,
           });
           if (!result.success) return result.error ?? "Couldn't link it.";
           setOpen(false);

@@ -40,6 +40,7 @@ export function UrlIngest({
         "priceRange",
         "types",
         "websiteURI",
+            "editorialSummary",
         "addressComponents",
         "photos",
       ];
