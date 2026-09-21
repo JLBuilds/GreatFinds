@@ -8,7 +8,6 @@ import { GoogleFallbackSearch } from "./GoogleFallbackSearch";
 import { PlacePhoto } from "./PlacePhoto";
 import { openStatus } from "@/lib/hours";
 import {
-  LISTING_TYPES,
   STATUS_META,
   extractUrl,
   initials,
@@ -16,7 +15,6 @@ import {
   priceLabel,
   priceLevelOf,
   type Folder,
-  type ListingType,
   type Restaurant,
   type RestaurantStatus,
 } from "@/lib/types";
@@ -73,7 +71,6 @@ export function PlacesList({
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | ListingType>("all");
   const [folderId, setFolderId] = useState<string | null | "none">(null);
   const [priceFilter, setPriceFilter] = useState<number | null>(null);
   const [countryFilter, setCountryFilter] = useState<string | null>(null);
@@ -149,8 +146,6 @@ export function PlacesList({
     const q = query.trim().toLowerCase();
     return restaurants.filter((r) => {
       if (filter !== "all" && r.status !== filter) return false;
-      if (typeFilter !== "all" && (r.type ?? "restaurant") !== typeFilter)
-        return false;
       if (folderId === "none" && r.folder_id !== null) return false;
       if (folderId !== null && folderId !== "none" && r.folder_id !== folderId)
         return false;
@@ -175,7 +170,6 @@ export function PlacesList({
   }, [
     restaurants,
     filter,
-    typeFilter,
     folderId,
     priceFilter,
     countryFilter,
@@ -216,7 +210,6 @@ export function PlacesList({
 
   const activeFilterCount =
     (filter !== "all" ? 1 : 0) +
-    (typeFilter !== "all" ? 1 : 0) +
     (folderId !== null ? 1 : 0) +
     (priceFilter !== null ? 1 : 0) +
     (countryFilter || cityFilter || areaFilter ? 1 : 0) +
@@ -226,7 +219,6 @@ export function PlacesList({
   function clearFilters() {
     setOpenNow(false);
     setFilter("all");
-    setTypeFilter("all");
     setFolderId(null);
     setPriceFilter(null);
     setCountryFilter(null);
@@ -263,19 +255,6 @@ export function PlacesList({
       { enableHighAccuracy: false, timeout: 10000 },
     );
   }
-
-  const typeCounts = useMemo(() => {
-    const c: Record<ListingType, number> = {
-      restaurant: 0,
-      experience: 0,
-      hotel: 0,
-      shopping: 0,
-    };
-    for (const r of restaurants) c[r.type ?? "restaurant"]++;
-    return c;
-  }, [restaurants]);
-  // Only offer the type filter once the list spans more than one type.
-  const typesPresent = LISTING_TYPES.filter((t) => typeCounts[t.key] > 0);
 
   const selectedRestaurants = restaurants.filter((r) => selectedIds.has(r.id));
 
@@ -552,7 +531,7 @@ export function PlacesList({
           <p className="text-sm text-fog">
             {query.trim()
               ? `Nothing saved matches “${query.trim()}”.`
-              : "Nothing here yet — try a different folder or filter."}
+              : "Nothing here yet — try a different tag or filter."}
           </p>
           {query.trim() ? (
             <GoogleFallbackSearch query={query.trim()} bias={searchBias} />
@@ -588,33 +567,11 @@ export function PlacesList({
               ) : null}
             </div>
 
-            {/* Type */}
-            {typesPresent.length > 1 ? (
-              <div className="space-y-1.5">
-                <p className="text-xs text-fog tracking-wide uppercase">Type</p>
-                <div className="flex flex-wrap gap-2">
-                  <FilterChip
-                    active={typeFilter === "all"}
-                    onClick={() => setTypeFilter("all")}
-                    label="Everything"
-                  />
-                  {typesPresent.map((t) => (
-                    <FilterChip
-                      key={t.key}
-                      active={typeFilter === t.key}
-                      onClick={() => setTypeFilter(t.key)}
-                      label={`${t.emoji} ${t.label}s ${typeCounts[t.key]}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {/* Folder */}
+            {/* Tag */}
             {localFolders.length > 0 ? (
               <div className="space-y-1.5">
                 <p className="text-xs text-fog tracking-wide uppercase">
-                  Folder
+                  Tag
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <FilterChip
@@ -834,7 +791,7 @@ export function PlacesList({
               }}
               className="rounded-lg bg-coral text-ink px-3 py-2 text-sm font-semibold disabled:opacity-40"
             >
-              Move
+              Tag
             </button>
             <button
               disabled={selectedIds.size === 0}
@@ -890,7 +847,7 @@ export function PlacesList({
         </div>
       ) : null}
 
-      {/* Move-to-folder sheet (single tile or multi-select) */}
+      {/* Tag sheet (single tile or multi-select) */}
       {moveTargets && moveTargets.length > 0 ? (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-night/70"
@@ -902,11 +859,11 @@ export function PlacesList({
           >
             <p className="text-[15px] font-semibold text-white">
               {moveTargets.length === 1
-                ? `Move “${moveTargets[0].name}” to…`
-                : `Move ${moveTargets.length} places to…`}
+                ? `Tag “${moveTargets[0].name}” as…`
+                : `Tag ${moveTargets.length} places as…`}
             </p>
             <div className="flex flex-col gap-1 max-h-[40vh] overflow-y-auto no-scrollbar">
-              {[{ id: null as string | null, name: "No folder" }, ...localFolders].map(
+              {[{ id: null as string | null, name: "No tag" }, ...localFolders].map(
                 (f) => {
                   const active = chosen === f.id;
                   return (
@@ -942,7 +899,7 @@ export function PlacesList({
                 <input
                   value={moveNewName}
                   onChange={(e) => setMoveNewName(e.target.value)}
-                  placeholder="Folder name"
+                  placeholder="Tag name"
                   className="flex-1 rounded-lg bg-card border border-line px-3 py-2 text-sm text-snow placeholder:text-fog/70 focus:outline-none"
                 />
                 <button
@@ -958,7 +915,7 @@ export function PlacesList({
                 onClick={() => setMoveNewOpen(true)}
                 className="w-full rounded-lg bg-card border border-dashed border-line text-fog px-4 py-2.5 text-sm"
               >
-                + New folder
+                + New tag
               </button>
             )}
 

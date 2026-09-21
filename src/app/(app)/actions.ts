@@ -542,9 +542,9 @@ export async function createFolder(
   name: string,
 ): Promise<Result & { folderId?: string }> {
   const trimmed = name?.trim();
-  if (!trimmed) return { success: false, error: "Give the folder a name." };
+  if (!trimmed) return { success: false, error: "Give the tag a name." };
   if (trimmed.length > 40) {
-    return { success: false, error: "Keep folder names under 40 characters." };
+    return { success: false, error: "Keep tag names under 40 characters." };
   }
 
   const supabase = await createClient();
@@ -561,7 +561,7 @@ export async function createFolder(
 
   if (error) {
     if (error.code === "23505") {
-      return { success: false, error: "A folder with that name exists." };
+      return { success: false, error: "A tag with that name exists." };
     }
     return { success: false, error: error.message };
   }

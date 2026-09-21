@@ -317,7 +317,7 @@ export function PlaceDetail({
           <HoursAndAmenities place={restaurant} />
           {!isOwner && folderName ? (
             <span className="inline-flex items-center gap-1 rounded-md bg-lilac/20 text-lilac px-2 py-1 font-body text-[11px] font-semibold uppercase tracking-[0.06em]">
-              📁 {folderName}
+              🏷️ {folderName}
             </span>
           ) : null}
         </header>

@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import {
-  LISTING_TYPES,
-  bandRange,
   priceBands,
   type Folder,
   type ListingType,
@@ -89,7 +87,7 @@ export function PlaceFields({
     const result = await createFolder(newFolderName);
     setFolderBusy(false);
     if (!result.success || !result.folderId) {
-      setFolderError(result.error ?? "Couldn't create folder.");
+      setFolderError(result.error ?? "Couldn't create tag.");
       return;
     }
     const folder = { id: result.folderId, name: newFolderName.trim() };
@@ -101,35 +99,6 @@ export function PlaceFields({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1">
-        <span className={labelCls}>Type</span>
-        <div className="flex gap-2">
-          {LISTING_TYPES.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() =>
-                set({
-                  type: t.key,
-                  // Keep the chosen level but relabel its range for the
-                  // new type's scale.
-                  price_range: draft.price_level
-                    ? bandRange(draft.price_level, t.key)
-                    : draft.price_range,
-                })
-              }
-              className={
-                draft.type === t.key
-                  ? "flex-1 rounded-lg bg-coral text-ink px-3 py-2 font-body text-xs font-semibold"
-                  : "flex-1 rounded-lg bg-card border border-line text-mist px-3 py-2 font-body text-xs"
-              }
-            >
-              {t.emoji} {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div className="space-y-1">
         <label htmlFor="pf-name" className={labelCls}>
           Name
@@ -168,9 +137,9 @@ export function PlaceFields({
         </div>
       </div>
 
-      {/* Folder */}
+      {/* Tag */}
       <div className="space-y-1.5">
-        <span className={labelCls}>Folder</span>
+        <span className={labelCls}>Tag</span>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -202,7 +171,7 @@ export function PlaceFields({
             onClick={() => setNewFolderOpen((v) => !v)}
             className="rounded-lg bg-card border border-dashed border-line text-fog px-3 py-1.5 font-body text-xs"
           >
-            + New folder
+            + New tag
           </button>
         </div>
         {newFolderOpen ? (
@@ -210,7 +179,7 @@ export function PlaceFields({
             <input
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder="Folder name"
+              placeholder="Tag name"
               className="flex-1 rounded-lg bg-card border border-line px-3 py-2 font-body text-xs text-snow placeholder:text-fog/70 focus:outline-none"
             />
             <button

@@ -46,7 +46,7 @@ export function FolderPicker({
     const result = await createFolder(newName);
     if (!result.success || !result.folderId) {
       setBusy(false);
-      setError(result.error ?? "Couldn't create folder.");
+      setError(result.error ?? "Couldn't create tag.");
       return;
     }
     const folder = { id: result.folderId, name: newName.trim() };
@@ -59,7 +59,7 @@ export function FolderPicker({
   return (
     <div className="space-y-2">
       <p className="font-body text-xs text-fog tracking-wide uppercase">
-        Folder
+        Tag
       </p>
       <div className="flex flex-wrap gap-2">
         <button
@@ -100,7 +100,7 @@ export function FolderPicker({
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Folder name"
+            placeholder="Tag name"
             className="flex-1 rounded-lg bg-card border border-line px-3 py-2 text-xs text-snow placeholder:text-fog/70 focus:outline-none"
           />
           <button
