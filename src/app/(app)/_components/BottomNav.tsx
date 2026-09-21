@@ -31,19 +31,6 @@ function MapIcon() {
   );
 }
 
-function PlusIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 function UserIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -68,19 +55,13 @@ const TABS: Array<{
     href: "/",
     label: "Home",
     icon: HomeIcon,
-    match: (p) => p === "/" || p.startsWith("/place"),
+    match: (p) => p === "/" || p.startsWith("/place") || p.startsWith("/add"),
   },
   {
     href: "/map",
     label: "Map",
     icon: MapIcon,
     match: (p) => p.startsWith("/map"),
-  },
-  {
-    href: "/add",
-    label: "Add",
-    icon: PlusIcon,
-    match: (p) => p.startsWith("/add"),
   },
   {
     href: "/you",

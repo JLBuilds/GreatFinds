@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Folder } from "@/lib/types";
 import { AddPlaceScreen } from "./_components/AddPlaceScreen";
@@ -13,5 +14,9 @@ export default async function AddPage() {
     .select("id, name")
     .order("name");
 
-  return <AddPlaceScreen folders={(data ?? []) as Folder[]} />;
+  return (
+    <Suspense fallback={null}>
+      <AddPlaceScreen folders={(data ?? []) as Folder[]} />
+    </Suspense>
+  );
 }

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isAdmin } from "@/lib/admin";
 import { fetchPlacePhotoNames } from "@/lib/google-places";
 import type { ListingType, RestaurantStatus } from "@/lib/types";
 
@@ -103,13 +104,17 @@ export async function updateRestaurant(
   if ("error" in cleaned) return { success: false, error: cleaned.error };
 
   const supabase = await createClient();
-  // RLS restricts updates to the author's own rows.
-  const { error } = await supabase
+  // RLS restricts updates to the author's own rows; admins may edit any.
+  const client = (await isAdmin()) ? createAdminClient() : supabase;
+  const { error, count } = await client
     .from("restaurants")
-    .update(cleaned)
+    .update(cleaned, { count: "exact" })
     .eq("id", id);
 
   if (error) return { success: false, error: error.message };
+  if (!count) {
+    return { success: false, error: "You can only edit places you added." };
+  }
 
   revalidatePath("/");
   revalidatePath("/map");
@@ -453,14 +458,33 @@ export async function setRestaurantStatus(
 }
 
 export async function deleteRestaurant(id: string): Promise<never> {
-  if (id) {
-    const supabase = await createClient();
-    // RLS restricts deletes to the author's own rows.
-    await supabase.from("restaurants").delete().eq("id", id);
-    revalidatePath("/");
-    revalidatePath("/map");
-  }
+  if (id) await deleteRestaurants([id]);
   redirect("/");
+}
+
+/** Delete several places at once (multi-select on the home screen).
+ *  RLS limits members to their own rows; admins may delete any. */
+export async function deleteRestaurants(ids: string[]): Promise<Result> {
+  const clean = (ids ?? []).filter((x) => typeof x === "string" && x).slice(0, 200);
+  if (clean.length === 0) return { success: false, error: "Nothing selected." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not signed in." };
+
+  const client = (await isAdmin()) ? createAdminClient() : supabase;
+  const { error, count } = await client
+    .from("restaurants")
+    .delete({ count: "exact" })
+    .in("id", clean);
+  if (error) return { success: false, error: error.message };
+  if (!count) {
+    return { success: false, error: "You can only delete places you added." };
+  }
+  revalidatePath("/");
+  revalidatePath("/map");
+  return { success: true };
 }
 
 // ---------------------------------------------------------------------

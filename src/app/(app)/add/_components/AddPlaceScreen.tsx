@@ -1,20 +1,71 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { APIProvider } from "@vis.gl/react-google-maps";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { createRestaurant } from "../../actions";
 import {
   EMPTY_DRAFT,
   PlaceFields,
   type PlaceDraft,
 } from "../../_components/PlaceFields";
-import { PlaceAutocomplete, type LookupResult } from "./PlaceLookup";
+import {
+  PlaceAutocomplete,
+  placeJsonToLookup,
+  type LookupResult,
+} from "./PlaceLookup";
 import { UrlIngest } from "./UrlIngest";
 import { placePhotoUrl, type Folder } from "@/lib/types";
 
+const PLACE_FIELDS = [
+  "id",
+  "displayName",
+  "formattedAddress",
+  "location",
+  "googleMapsURI",
+  "priceLevel",
+  "priceRange",
+  "types",
+  "websiteURI",
+  "addressComponents",
+  "photos",
+];
+
+/** Arriving from a Google result on the home screen (?place=<id>):
+ *  fetch that place once and hand it to the form. */
+function PrefillFromPlaceId({
+  placeId,
+  onResolved,
+  onError,
+}: {
+  placeId: string;
+  onResolved: (r: LookupResult) => void;
+  onError: (msg: string) => void;
+}) {
+  const places = useMapsLibrary("places");
+  const done = useRef(false);
+  useEffect(() => {
+    if (!places || done.current) return;
+    done.current = true;
+    (async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const place = new (places as any).Place({ id: placeId });
+        await place.fetchFields({ fields: PLACE_FIELDS });
+        onResolved(placeJsonToLookup(place.toJSON()));
+      } catch (err) {
+        console.error("[AddPlace] prefill failed:", err);
+        onError("Couldn't load that place from Google — search for it below.");
+      }
+    })();
+  }, [places, placeId, onResolved, onError]);
+  return null;
+}
+
 export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
   const router = useRouter();
+  const prefillId = useSearchParams().get("place");
   const [draft, setDraft] = useState<PlaceDraft>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,19 +122,40 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   return (
-    <main className="max-w-sm mx-auto px-6 pt-6 space-y-5">
+    <main className="max-w-sm mx-auto px-6 space-y-5">
+      {/* Always-visible actions, so Save is reachable without scrolling */}
+      <div className="sticky top-0 z-20 -mx-6 px-6 py-3 bg-ink/95 backdrop-blur border-b border-line flex items-center justify-between">
+        <Link href="/" className="text-sm text-fog">
+          Cancel
+        </Link>
+        <span className="text-sm font-semibold text-white">Add a place</span>
+        <button
+          type="submit"
+          form="add-place-form"
+          disabled={saving || !draft.name.trim()}
+          className="rounded-lg bg-coral text-ink px-4 py-1.5 text-sm font-semibold disabled:opacity-40"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
+
       <header>
-        <h1 className="text-[26px] font-semibold text-white tracking-[-0.01em]">
-          Add a place
-        </h1>
         <p className="text-sm text-fog">
-          Paste a Google Maps link or search — it fills everything in, photos
-          included.
+          {prefillId
+            ? "Details from Google Maps are filled in below. Adjust anything, then save."
+            : "Paste a Google Maps link or search — it fills everything in, photos included."}
         </p>
       </header>
 
       {apiKey ? (
         <APIProvider apiKey={apiKey}>
+          {prefillId && !lookedUp ? (
+            <PrefillFromPlaceId
+              placeId={prefillId}
+              onResolved={applyLookup}
+              onError={setError}
+            />
+          ) : null}
           <div className="space-y-3">
             <UrlIngest onResolved={applyLookup} />
             <div className="flex items-center gap-3">
@@ -117,6 +189,7 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
       ) : null}
 
       <form
+        id="add-place-form"
         onSubmit={(e) => {
           e.preventDefault();
           if (!saving) save();

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createFolder, setRestaurantFolder } from "../actions";
+import { createFolder, deleteRestaurants, setRestaurantFolder } from "../actions";
 import { GoogleFallbackSearch } from "./GoogleFallbackSearch";
 import { PlacePhoto } from "./PlacePhoto";
 import {
@@ -91,6 +91,10 @@ export function PlacesList({
   // or the whole multi-select set.
   const [moveTargets, setMoveTargets] = useState<Restaurant[] | null>(null);
   const [moveBusy, setMoveBusy] = useState(false);
+  // Multi-select delete confirmation
+  const [confirmDeleteIds, setConfirmDeleteIds] = useState<string[] | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [moveNewOpen, setMoveNewOpen] = useState(false);
   const [moveNewName, setMoveNewName] = useState("");
   // Multi-select
@@ -284,6 +288,21 @@ export function PlacesList({
       closeMove();
       router.refresh();
     }
+  }
+
+  async function doDelete(ids: string[]) {
+    setDeleteBusy(true);
+    setDeleteError(null);
+    const result = await deleteRestaurants(ids);
+    setDeleteBusy(false);
+    if (!result.success) {
+      setDeleteError(result.error ?? "Couldn't delete.");
+      return;
+    }
+    setConfirmDeleteIds(null);
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    router.refresh();
   }
 
   async function createAndSelectFolder() {
@@ -785,10 +804,60 @@ export function PlacesList({
                 setChosen(undefined);
                 setMoveTargets(selectedRestaurants);
               }}
-              className="rounded-lg bg-coral text-ink px-4 py-2 text-sm font-semibold disabled:opacity-40"
+              className="rounded-lg bg-coral text-ink px-3 py-2 text-sm font-semibold disabled:opacity-40"
             >
-              Move to folder
+              Move
             </button>
+            <button
+              disabled={selectedIds.size === 0}
+              onClick={() => {
+                setDeleteError(null);
+                setConfirmDeleteIds([...selectedIds]);
+              }}
+              aria-label="Delete selected"
+              className="rounded-lg border border-coral/70 text-coral px-3 py-2 text-sm font-semibold disabled:opacity-40"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Multi-select delete confirmation */}
+      {confirmDeleteIds && confirmDeleteIds.length > 0 ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-night/70"
+          onClick={() => (deleteBusy ? null : setConfirmDeleteIds(null))}
+        >
+          <div
+            className="w-full max-w-sm mx-4 mb-4 rounded-xl bg-ink border border-line p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[17px] font-semibold text-white">
+              {confirmDeleteIds.length === 1
+                ? `Delete “${restaurants.find((r) => r.id === confirmDeleteIds[0])?.name ?? "this place"}”?`
+                : `Delete ${confirmDeleteIds.length} places?`}
+            </p>
+            <p className="text-sm text-fog">This can’t be undone.</p>
+            {deleteError ? (
+              <p className="text-sm text-coral">{deleteError}</p>
+            ) : null}
+            <div className="flex gap-2">
+              <button
+                disabled={deleteBusy}
+                onClick={() => doDelete(confirmDeleteIds)}
+                className="flex-1 bg-coral text-ink rounded-lg py-3 text-sm font-semibold disabled:opacity-40"
+              >
+                {deleteBusy ? "Deleting…" : "Yes, delete"}
+              </button>
+              <button
+                disabled={deleteBusy}
+                onClick={() => setConfirmDeleteIds(null)}
+                className="flex-1 bg-card border border-line text-snow rounded-lg py-3 text-sm"
+              >
+                Keep
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

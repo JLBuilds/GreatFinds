@@ -143,21 +143,33 @@ export function PlaceDetail({
 
   if (editing) {
     return (
-      <main className="max-w-sm mx-auto px-6 pt-6 space-y-5">
-        <header className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-white">Edit place</h1>
+      <main className="max-w-sm mx-auto px-6 space-y-5">
+        {/* Always-visible actions, so Save is reachable without scrolling */}
+        <div className="sticky top-0 z-20 -mx-6 px-6 py-3 bg-ink/95 backdrop-blur border-b border-line flex items-center justify-between">
           <button
+            type="button"
             onClick={() => {
               setEditing(false);
+              setConfirmDelete(false);
               setDraft(toDraft(restaurant));
             }}
             className="font-body text-sm text-fog"
           >
             Cancel
           </button>
-        </header>
+          <span className="text-sm font-semibold text-white">Edit place</span>
+          <button
+            type="submit"
+            form="edit-place-form"
+            disabled={busy || !draft.name.trim()}
+            className="rounded-lg bg-coral text-ink px-4 py-1.5 text-sm font-semibold disabled:opacity-40"
+          >
+            {busy ? "Saving…" : "Save"}
+          </button>
+        </div>
 
         <form
+          id="edit-place-form"
           onSubmit={(e) => {
             e.preventDefault();
             if (!busy) saveEdits();
@@ -176,9 +188,62 @@ export function PlaceDetail({
             {busy ? "Saving…" : "Save changes"}
           </button>
         </form>
+
+        <div className="pt-4 border-t border-line">
+          {confirmDelete ? (
+            <div className="space-y-2">
+              <p className="font-body text-sm text-mist text-center">
+                Delete “{restaurant.name}”? This can’t be undone.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => deleteRestaurant(restaurant.id)}
+                  className="flex-1 bg-coral text-ink rounded-lg py-3 font-body font-semibold hover:opacity-90"
+                >
+                  Yes, delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="flex-1 bg-card border border-line text-snow rounded-lg py-3 font-body"
+                >
+                  Keep it
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="w-full font-body text-sm text-coral/90 py-2"
+            >
+              Delete this place
+            </button>
+          )}
+        </div>
       </main>
     );
   }
+
+  const editButton = isOwner ? (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      aria-label="Edit details"
+      className="w-9 h-9 rounded-lg bg-ink/80 backdrop-blur border border-line flex items-center justify-center text-snow"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinejoin="round"
+        />
+        <path d="M13.5 8.5l3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    </button>
+  ) : null;
 
   return (
     <main className="max-w-sm mx-auto pb-6">
@@ -203,14 +268,18 @@ export function PlaceDetail({
               <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Link>
+          <div className="absolute top-4 right-4">{editButton}</div>
         </div>
       ) : null}
 
       <div className={`px-6 space-y-5 ${heroUrl ? "-mt-6 relative" : "pt-6"}`}>
         {!heroUrl ? (
-          <Link href="/" className="font-body text-sm text-fog inline-block">
-            ← All places
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link href="/" className="font-body text-sm text-fog inline-block">
+              ← All places
+            </Link>
+            {editButton}
+          </div>
         ) : null}
 
         <header className="space-y-2">

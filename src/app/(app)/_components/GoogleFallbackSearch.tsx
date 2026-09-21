@@ -3,11 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps";
-import { createRestaurant } from "../actions";
-import {
-  extractPhotoNames,
-  placeJsonToLookup,
-} from "../add/_components/PlaceLookup";
+import { extractPhotoNames } from "../add/_components/PlaceLookup";
 import { placePhotoUrl } from "@/lib/types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -244,36 +240,12 @@ export function GoogleFallbackSearch({
       bias={bias}
       heading="From Google Maps — tap to add:"
       actionLabel="Add +"
-      busyLabel="Adding…"
+      busyLabel="Opening…"
       onPick={async (hit) => {
-        const r = placeJsonToLookup(hit.json);
-        const result = await createRestaurant({
-          type: r.type,
-          name: r.name,
-          cuisine: r.cuisine,
-          area: r.area,
-          city: r.city,
-          country: r.country,
-          price_level: r.price_level,
-          price_range: r.price_range,
-          status: "want_to_try",
-          recommended_by: null,
-          notes: null,
-          link: r.website,
-          google_place_id: r.google_place_id,
-          google_maps_url: r.google_maps_url,
-          address: r.address,
-          lat: r.lat,
-          lng: r.lng,
-          photos: r.photos,
-          folder_id: null,
-        });
-        if (result.success && result.id) {
-          router.push(`/place/${result.id}`);
-          router.refresh();
-          return null;
-        }
-        return result.error ?? "Couldn't create the listing.";
+        // Open the Add screen prefilled so folder, status and notes can be
+        // set before saving.
+        router.push(`/add?place=${encodeURIComponent(hit.placeId)}`);
+        return null;
       }}
     />
   );
