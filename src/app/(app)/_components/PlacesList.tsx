@@ -144,29 +144,35 @@ export function PlacesList({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return restaurants.filter((r) => {
-      if (filter !== "all" && r.status !== filter) return false;
-      if (folderId === "none" && r.folder_id !== null) return false;
-      if (folderId !== null && folderId !== "none" && r.folder_id !== folderId)
-        return false;
-      if (priceFilter !== null && priceLevelOf(r) !== priceFilter) return false;
-      if (countryFilter && r.country !== countryFilter) return false;
-      if (cityFilter && r.city !== cityFilter) return false;
-      if (areaFilter && r.area !== areaFilter) return false;
-      if (radiusKm && userLoc) {
-        if (r.lat == null || r.lng == null) return false;
-        if (haversineKm(userLoc, { lat: r.lat, lng: r.lng }) > radiusKm)
+    return restaurants
+      .filter((r) => {
+        if (filter !== "all" && r.status !== filter) return false;
+        if (folderId === "none" && r.folder_id !== null) return false;
+        if (folderId !== null && folderId !== "none" && r.folder_id !== folderId)
           return false;
-      }
-      if (openNow) {
-        const st = openStatus(r.opening_hours, r.utc_offset_minutes);
-        if (!st?.isOpen) return false;
-      }
-      if (!q) return true;
-      return [r.name, r.cuisine, r.area, r.city, r.recommended_by, r.notes]
-        .filter(Boolean)
-        .some((f) => (f as string).toLowerCase().includes(q));
-    });
+        if (priceFilter !== null && priceLevelOf(r) !== priceFilter)
+          return false;
+        if (countryFilter && r.country !== countryFilter) return false;
+        if (cityFilter && r.city !== cityFilter) return false;
+        if (areaFilter && r.area !== areaFilter) return false;
+        if (radiusKm && userLoc) {
+          if (r.lat == null || r.lng == null) return false;
+          if (haversineKm(userLoc, { lat: r.lat, lng: r.lng }) > radiusKm)
+            return false;
+        }
+        if (openNow) {
+          const st = openStatus(r.opening_hours, r.utc_offset_minutes);
+          if (!st?.isOpen) return false;
+        }
+        if (!q) return true;
+        return [r.name, r.cuisine, r.area, r.city, r.recommended_by, r.notes]
+          .filter(Boolean)
+          .some((f) => (f as string).toLowerCase().includes(q));
+      })
+      // Default order: alphabetical by name (case-insensitive, locale-aware).
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      );
   }, [
     restaurants,
     filter,
