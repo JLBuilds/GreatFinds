@@ -9,6 +9,7 @@ import {
   AdvancedMarker,
   Map,
   useMap,
+  useMapsLibrary,
 } from "@vis.gl/react-google-maps";
 import {
   STATUS_META,
@@ -55,6 +56,125 @@ function FitToPlaces({
   return null;
 }
 
+type AreaPick = {
+  name: string;
+  center: { lat: number; lng: number } | null;
+  bounds: google.maps.LatLngBoundsLiteral | null;
+};
+
+/** Frames the map on a chosen area (its viewport, or centre + zoom). */
+function FitToBounds({ area, fitKey }: { area: AreaPick | null; fitKey: string }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map || !area) return;
+    if (area.bounds) {
+      map.fitBounds(area.bounds, { top: 170, bottom: 120, left: 40, right: 40 });
+    } else if (area.center) {
+      map.panTo(area.center);
+      map.setZoom(13);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, fitKey]);
+  return null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Suggestion = any;
+
+/** Google area suggestions (cities, districts, neighbourhoods) for the
+ *  search text. Lives inside <APIProvider>. */
+function AreaSuggestions({
+  query,
+  bias,
+  onPick,
+}: {
+  query: string;
+  bias: { lat: number; lng: number } | null;
+  onPick: (a: AreaPick) => void;
+}) {
+  const places = useMapsLibrary("places");
+  const [items, setItems] = useState<Suggestion[]>([]);
+  const [busyIdx, setBusyIdx] = useState<number | null>(null);
+  const q = query.trim();
+
+  useEffect(() => {
+    if (!places) return;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      if (q.length < 2) {
+        setItems([]);
+        return;
+      }
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { AutocompleteSuggestion } = places as any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const req: any = { input: q, includedPrimaryTypes: ["(regions)"] };
+        if (bias) req.locationBias = { center: bias, radius: 80_000 };
+        const { suggestions } =
+          await AutocompleteSuggestion.fetchAutocompleteSuggestions(req);
+        if (!cancelled) setItems((suggestions ?? []).slice(0, 4));
+      } catch (err) {
+        console.error("[map] area lookup failed:", err);
+        if (!cancelled) setItems([]);
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [places, q, bias]);
+
+  if (q.length < 2 || items.length === 0) return null;
+
+  async function pick(sug: Suggestion, idx: number) {
+    setBusyIdx(idx);
+    try {
+      const place = sug.placePrediction.toPlace();
+      await place.fetchFields({ fields: ["displayName", "location", "viewport"] });
+      const j = place.toJSON();
+      onPick({
+        name: j.displayName ?? sug.placePrediction.mainText?.text ?? q,
+        center: j.location ?? null,
+        bounds: j.viewport ?? null,
+      });
+    } catch (err) {
+      console.error("[map] area fetch failed:", err);
+    } finally {
+      setBusyIdx(null);
+    }
+  }
+
+  return (
+    <div className="rounded-lg bg-ink/95 border border-line backdrop-blur overflow-hidden">
+      <p className="px-3 pt-2 pb-1 text-[11px] text-fog uppercase tracking-wide">Areas</p>
+      {items.map((sug, i) => {
+        const main = sug.placePrediction?.mainText?.text ?? sug.placePrediction?.text?.text ?? "";
+        const sub = sug.placePrediction?.secondaryText?.text ?? "";
+        return (
+          <button
+            key={sug.placePrediction?.placeId ?? i}
+            type="button"
+            onClick={() => pick(sug, i)}
+            disabled={busyIdx !== null}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-card/60 disabled:opacity-50"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-lilac" aria-hidden="true">
+              <path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+              <circle cx="12" cy="11" r="2.2" stroke="currentColor" strokeWidth="1.7" />
+            </svg>
+            <span className="min-w-0">
+              <span className="block text-sm text-snow truncate">{main}</span>
+              {sub ? <span className="block text-xs text-fog truncate">{sub}</span> : null}
+            </span>
+            <span className="ml-auto text-xs text-fog shrink-0">{busyIdx === i ? "…" : "Go →"}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function MapScreen({
   restaurants,
   folders = [],
@@ -70,6 +190,7 @@ export function MapScreen({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const [openId, setOpenId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [area, setArea] = useState<AreaPick | null>(null);
 
   // Same filters as the Home tab.
   const pf = usePlaceFilters({ restaurants, folders, projects, membership });
@@ -90,10 +211,12 @@ export function MapScreen({
   );
   // Re-frame the map when a search or a project narrows the set; with
   // neither, leave the user's view alone.
-  const fitKey =
-    q || pf.projectFilter
+  const fitKey = area
+    ? "area-locked"
+    : q || pf.projectFilter
       ? `${pf.projectFilter ?? ""}|${q}|${visible.map((r) => r.id).join(",")}`
       : "all";
+  const areaKey = area ? `${area.name}:${area.center?.lat ?? ""},${area.center?.lng ?? ""}` : "";
 
   const center = useMemo(() => {
     if (visible.length === 0) return FALLBACK_CENTER;
@@ -140,6 +263,7 @@ export function MapScreen({
           onClick={() => setOpenId(null)}
         >
           <FitToPlaces places={visible} fitKey={fitKey} />
+          <FitToBounds area={area} fitKey={areaKey} />
           {visible.map((r) => {
             const meta = STATUS_META[r.status];
             const selected = r.id === openId;
@@ -175,7 +299,6 @@ export function MapScreen({
             );
           })}
         </Map>
-      </APIProvider>
 
       {/* Top gradient + chrome, per map-explore.html */}
       <div className="pointer-events-none absolute top-0 left-0 right-0 h-[170px] bg-gradient-to-b from-ink/95 via-ink/70 to-transparent" />
@@ -192,6 +315,17 @@ export function MapScreen({
             <circle cx="7.6" cy="7.6" r="6.1" stroke="#889898" strokeWidth="1.5" />
             <path d="M12.2 12.2 16.2 16.2" stroke="#889898" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
+          {area ? (
+            <button
+              type="button"
+              onClick={() => setArea(null)}
+              aria-label={`Leave ${area.name}`}
+              className="shrink-0 max-w-[45%] h-7 rounded-md bg-lilac/20 border border-lilac/50 text-lilac px-2 text-[13px] font-semibold flex items-center gap-1 truncate"
+            >
+              <span className="truncate">{area.name}</span>
+              <span className="text-lilac/80">×</span>
+            </button>
+          ) : null}
           <input
             type="search"
             value={query}
@@ -199,8 +333,14 @@ export function MapScreen({
               setQuery(e.target.value);
               setOpenId(null);
             }}
-            placeholder={project ? `Search in ${project.name}…` : "Search your places…"}
-            aria-label="Search places on the map"
+            placeholder={
+              area
+                ? "Search places here…"
+                : project
+                  ? `Search in ${project.name}…`
+                  : "Search places or areas…"
+            }
+            aria-label="Search places or areas on the map"
             className="flex-1 min-w-0 bg-transparent text-[15px] text-snow placeholder:text-fog focus:outline-none"
           />
           {query ? (
@@ -214,6 +354,15 @@ export function MapScreen({
             </button>
           ) : null}
         </div>
+        <AreaSuggestions
+          query={query}
+          bias={pf.userLoc ?? center}
+          onPick={(a) => {
+            setArea(a);
+            setQuery("");
+            setOpenId(null);
+          }}
+        />
         <div className="flex items-center justify-between gap-2">
           <FiltersButton filters={pf} onMap />
           <span
@@ -235,7 +384,7 @@ export function MapScreen({
         </div>
         {q && visible.length === 0 ? (
           <p className="text-[13px] text-fog bg-card/90 border border-line backdrop-blur rounded-lg px-3 py-2">
-            Nothing on the map matches “{query.trim()}”.
+            No saved places match “{query.trim()}”.
           </p>
         ) : null}
       </div>
@@ -302,6 +451,7 @@ export function MapScreen({
       ) : null}
 
       <FiltersSheet filters={pf} resultCount={visible.length} />
+      </APIProvider>
     </main>
   );
 }
