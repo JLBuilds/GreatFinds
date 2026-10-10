@@ -5,7 +5,47 @@ import { createProject } from "../projects/actions";
 import { projectSubtitle, type Project } from "@/lib/types";
 
 const inputCls =
-  "w-full rounded-lg bg-card border border-line px-3 py-2 font-body text-xs text-snow placeholder:text-fog/70 focus:outline-none focus:border-coral/60 [color-scheme:dark]";
+  "w-full min-w-0 max-w-full rounded-lg bg-card border border-line px-3 py-2 font-body text-xs text-snow placeholder:text-fog/70 focus:outline-none focus:border-coral/60 [color-scheme:dark]";
+
+/** iOS renders an empty <input type="date"> as a blank box and gives it an
+ *  intrinsic width that ignores the grid. Pin the size and overlay a hint
+ *  until a date is picked. */
+export function DateField({
+  label,
+  value,
+  min,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  min?: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="block min-w-0 space-y-1">
+      <span className="block font-body text-[10px] text-fog uppercase tracking-wide">
+        {label}
+      </span>
+      <span className="relative block min-w-0">
+        <input
+          type="date"
+          value={value}
+          min={min || undefined}
+          onChange={(e) => onChange(e.target.value)}
+          className={`${inputCls} block h-9 appearance-none`}
+        />
+        {!value ? (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 left-3 flex items-center font-body text-xs text-fog/70"
+          >
+            Pick a date
+          </span>
+        ) : null}
+      </span>
+    </label>
+  );
+}
 
 /** Inline "new project" form: name, optional city, optional dates. */
 export function NewProjectForm({
@@ -69,30 +109,14 @@ export function NewProjectForm({
         placeholder="City (optional)"
         className={inputCls}
       />
-      <div className="grid grid-cols-2 gap-2">
-        <label className="space-y-1">
-          <span className="block font-body text-[10px] text-fog uppercase tracking-wide">
-            From (optional)
-          </span>
-          <input
-            type="date"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            className={inputCls}
-          />
-        </label>
-        <label className="space-y-1">
-          <span className="block font-body text-[10px] text-fog uppercase tracking-wide">
-            To (optional)
-          </span>
-          <input
-            type="date"
-            value={end}
-            min={start || undefined}
-            onChange={(e) => setEnd(e.target.value)}
-            className={inputCls}
-          />
-        </label>
+      <div className="grid grid-cols-2 gap-2 min-w-0">
+        <DateField label="From (optional)" value={start} onChange={setStart} />
+        <DateField
+          label="To (optional)"
+          value={end}
+          min={start}
+          onChange={setEnd}
+        />
       </div>
       {error ? <p className="font-body text-xs text-coral">{error}</p> : null}
       <div className="flex gap-2">

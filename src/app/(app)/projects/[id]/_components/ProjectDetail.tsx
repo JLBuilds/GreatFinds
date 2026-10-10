@@ -9,6 +9,7 @@ import {
   updateProject,
 } from "../../actions";
 import { PlacePhoto } from "../../../_components/PlacePhoto";
+import { DateField } from "../../../_components/ProjectPicker";
 import {
   STATUS_META,
   priceLabel,
@@ -111,21 +112,9 @@ export function ProjectDetail({
               className={inputCls}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className={labelCls}>From</label>
-              <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className={inputCls} />
-            </div>
-            <div className="space-y-1">
-              <label className={labelCls}>To</label>
-              <input
-                type="date"
-                value={end}
-                min={start || undefined}
-                onChange={(e) => setEnd(e.target.value)}
-                className={inputCls}
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-3 min-w-0">
+            <DateField label="From" value={start} onChange={setStart} />
+            <DateField label="To" value={end} min={start} onChange={setEnd} />
           </div>
           {error ? <p className="font-body text-sm text-coral text-center">{error}</p> : null}
         </div>
