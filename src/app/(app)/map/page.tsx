@@ -1,17 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Project, Restaurant } from "@/lib/types";
+import type { Folder, Project, Restaurant } from "@/lib/types";
 import { MapScreen } from "./_components/MapScreen";
 
 export const metadata = { title: "Map" };
 
 export default async function MapPage() {
   const supabase = await createClient();
-  const [{ data }, { data: projects }, { data: memberRows }] = await Promise.all([
+  const [{ data }, { data: folders }, { data: projects }, { data: memberRows }] = await Promise.all([
     supabase
       .from("restaurants")
       .select("*")
       .not("lat", "is", null)
       .not("lng", "is", null),
+    supabase.from("folders").select("id, name").order("name"),
     supabase
       .from("projects")
       .select("*")
@@ -27,6 +28,7 @@ export default async function MapPage() {
   return (
     <MapScreen
       restaurants={(data ?? []) as Restaurant[]}
+      folders={(folders ?? []) as Folder[]}
       projects={(projects ?? []) as Project[]}
       membership={membership}
     />
