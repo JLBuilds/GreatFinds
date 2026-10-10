@@ -4,13 +4,19 @@ import {
   initials,
   type Folder,
   type Profile,
+  type Project,
   type Restaurant,
 } from "@/lib/types";
 import { PlacesList } from "./_components/PlacesList";
 import { PlaceSync } from "./_components/PlaceSync";
 import { needsSync } from "@/lib/hours";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ project?: string }>;
+}) {
+  const { project: targetProjectId } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: restaurants }, { data: profiles }, { data: folders }, userRes] =
@@ -24,6 +30,20 @@ export default async function HomePage() {
       supabase.from("folders").select("id, name").order("name"),
       supabase.auth.getUser(),
     ]);
+  // Projects + membership (pre-migration 0009 these tables may not exist;
+  // errors just mean "no projects").
+  const [{ data: projects }, { data: memberRows }] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("*")
+      .order("start_date", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+    supabase.from("project_places").select("project_id, restaurant_id"),
+  ]);
+  const membership: Record<string, string[]> = {};
+  for (const m of (memberRows ?? []) as { project_id: string; restaurant_id: string }[]) {
+    (membership[m.restaurant_id] ??= []).push(m.project_id);
+  }
 
   const names: Record<string, string> = {};
   for (const p of (profiles ?? []) as Profile[]) {
@@ -65,6 +85,9 @@ export default async function HomePage() {
       <PlacesList
         restaurants={(restaurants ?? []) as Restaurant[]}
         folders={(folders ?? []) as Folder[]}
+        projects={(projects ?? []) as Project[]}
+        membership={membership}
+        targetProjectId={targetProjectId ?? null}
       />
     </main>
   );

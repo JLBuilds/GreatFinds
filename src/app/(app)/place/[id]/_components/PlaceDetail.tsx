@@ -20,12 +20,15 @@ import { MeetHere, directionsUrl } from "./MeetHere";
 import { PlacePhoto } from "../../../_components/PlacePhoto";
 import { FolderPicker } from "./FolderPicker";
 import { LinkedText } from "@/components/LinkedText";
+import { ProjectPicker } from "../../../_components/ProjectPicker";
+import { setPlaceProjects } from "../../../projects/actions";
 import {
   STATUS_META,
   isPermanentlyClosed,
   placePhotoUrl,
   priceLabel,
   type Folder,
+  type Project,
   type Restaurant,
   type RestaurantStatus,
 } from "@/lib/types";
@@ -60,12 +63,22 @@ export function PlaceDetail({
   restaurant,
   isOwner,
   folders,
+  projects = [],
+  projectIds = [],
 }: {
   restaurant: Restaurant;
   isOwner: boolean;
   folders: Folder[];
+  projects?: Project[];
+  projectIds?: string[];
 }) {
   const router = useRouter();
+  const [memberOf, setMemberOf] = useState<string[]>(projectIds);
+  async function changeProjects(ids: string[]) {
+    setMemberOf(ids);
+    await setPlaceProjects(restaurant.id, ids);
+    router.refresh();
+  }
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<PlaceDraft>(toDraft(restaurant));
   const [busy, setBusy] = useState(false);
@@ -373,6 +386,12 @@ export function PlaceDetail({
             folders={folders}
           />
         ) : null}
+
+        <ProjectPicker
+          projects={projects}
+          selected={memberOf}
+          onChange={changeProjects}
+        />
 
         {restaurant.recommended_by ? (
           <p className="font-body text-sm text-mist break-words">

@@ -10,6 +10,8 @@ import {
   setRestaurantFolder,
 } from "../actions";
 import { GoogleFallbackSearch } from "./GoogleFallbackSearch";
+import { NewProjectForm } from "./ProjectPicker";
+import { addPlacesToProject } from "../projects/actions";
 import { PlacePhoto } from "./PlacePhoto";
 import { openStatus } from "@/lib/hours";
 import {
@@ -18,9 +20,11 @@ import {
   initials,
   isHiddenClosed,
   prettyDomain,
+  projectSubtitle,
   priceLabel,
   priceLevelOf,
   type Folder,
+  type Project,
   type Restaurant,
   type RestaurantStatus,
 } from "@/lib/types";
@@ -71,9 +75,18 @@ function FilterChip({
 export function PlacesList({
   restaurants,
   folders,
+  projects = [],
+  membership = {},
+  targetProjectId = null,
 }: {
   restaurants: Restaurant[];
   folders: Folder[];
+  projects?: Project[];
+  /** restaurant id → project ids it belongs to */
+  membership?: Record<string, string[]>;
+  /** Arrived from a project's "Add places" link: start in select mode and
+   *  send selections straight to that project. */
+  targetProjectId?: string | null;
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
@@ -84,6 +97,14 @@ export function PlacesList({
   const [areaFilter, setAreaFilter] = useState<string | null>(null);
   const [radiusKm, setRadiusKm] = useState<number | null>(null);
   const [openNow, setOpenNow] = useState(false);
+  // Projects
+  const [localProjects, setLocalProjects] = useState<Project[]>(projects);
+  const [projectFilter, setProjectFilter] = useState<string | null>(null);
+  const [projectSheetOpen, setProjectSheetOpen] = useState(false);
+  const [projectChosen, setProjectChosen] = useState<string | null>(targetProjectId);
+  const [projectNewOpen, setProjectNewOpen] = useState(false);
+  const [projectBusy, setProjectBusy] = useState(false);
+  const [projectError, setProjectError] = useState<string | null>(null);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(
     null,
   );
@@ -106,7 +127,7 @@ export function PlacesList({
   const [moveNewOpen, setMoveNewOpen] = useState(false);
   const [moveNewName, setMoveNewName] = useState("");
   // Multi-select
-  const [selectMode, setSelectMode] = useState(false);
+  const [selectMode, setSelectMode] = useState(Boolean(targetProjectId));
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // Chosen destination in the move sheet (undefined = nothing picked yet,
   // null = "No folder").
@@ -178,6 +199,8 @@ export function PlacesList({
         // Permanently closed and not yet reviewed: hidden here, shown in
         // the closed-review sheet instead.
         if (isHiddenClosed(r)) return false;
+        if (projectFilter && !(membership[r.id] ?? []).includes(projectFilter))
+          return false;
         if (filter !== "all" && r.status !== filter) return false;
         if (folderId === "none" && r.folder_id !== null) return false;
         if (folderId !== null && folderId !== "none" && r.folder_id !== folderId)
@@ -216,6 +239,8 @@ export function PlacesList({
     radiusKm,
     userLoc,
     openNow,
+    projectFilter,
+    membership,
     query,
   ]);
 
@@ -252,10 +277,12 @@ export function PlacesList({
     (priceFilter !== null ? 1 : 0) +
     (countryFilter || cityFilter || areaFilter ? 1 : 0) +
     (radiusKm !== null ? 1 : 0) +
-    (openNow ? 1 : 0);
+    (openNow ? 1 : 0) +
+    (projectFilter ? 1 : 0);
 
   function clearFilters() {
     setOpenNow(false);
+    setProjectFilter(null);
     setFilter("all");
     setFolderId(null);
     setPriceFilter(null);
@@ -314,6 +341,25 @@ export function PlacesList({
       closeMove();
       router.refresh();
     }
+  }
+
+  async function addSelectedToProject() {
+    if (!projectChosen || selectedIds.size === 0) return;
+    setProjectBusy(true);
+    setProjectError(null);
+    const r = await addPlacesToProject(projectChosen, [...selectedIds]);
+    setProjectBusy(false);
+    if (!r.success) {
+      setProjectError(r.error ?? "Couldn't add to the project.");
+      return;
+    }
+    setProjectSheetOpen(false);
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    if (targetProjectId) {
+      router.push(`/projects/${projectChosen}`);
+    }
+    router.refresh();
   }
 
   async function doDelete(ids: string[]) {
@@ -609,6 +655,103 @@ export function PlacesList({
         />
       ) : null}
 
+      {/* Add-to-project sheet (multi-select) */}
+      {projectSheetOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-night/70"
+          onClick={() => (projectBusy ? null : setProjectSheetOpen(false))}
+        >
+          <div
+            className="w-full max-w-sm bg-ink border-t border-line rounded-t-2xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[15px] font-semibold text-white">
+              {selectedIds.size === 1
+                ? "Add 1 place to…"
+                : `Add ${selectedIds.size} places to…`}
+            </p>
+            {localProjects.length === 0 && !projectNewOpen ? (
+              <p className="text-sm text-fog">No projects yet — create one below.</p>
+            ) : null}
+            <div className="flex flex-col gap-1 max-h-[40vh] overflow-y-auto no-scrollbar">
+              {localProjects.map((p) => {
+                const active = projectChosen === p.id;
+                const sub = projectSubtitle(p);
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setProjectChosen(p.id)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-card/60"
+                  >
+                    <span
+                      className={
+                        active
+                          ? "w-[18px] h-[18px] rounded-full border-[5px] border-coral shrink-0"
+                          : "w-[18px] h-[18px] rounded-full border-2 border-line shrink-0"
+                      }
+                    />
+                    <span className="min-w-0">
+                      <span
+                        className={
+                          active
+                            ? "block text-sm font-semibold text-snow"
+                            : "block text-sm text-mist"
+                        }
+                      >
+                        {p.name}
+                      </span>
+                      {sub ? (
+                        <span className="block text-xs text-fog truncate">{sub}</span>
+                      ) : null}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {projectNewOpen ? (
+              <NewProjectForm
+                onCancel={() => setProjectNewOpen(false)}
+                onCreated={(p) => {
+                  setLocalProjects((l) => [...l, p]);
+                  setProjectChosen(p.id);
+                  setProjectNewOpen(false);
+                }}
+              />
+            ) : (
+              <button
+                onClick={() => setProjectNewOpen(true)}
+                className="w-full rounded-lg bg-card border border-dashed border-line text-fog px-4 py-2.5 text-sm"
+              >
+                + New project
+              </button>
+            )}
+
+            {projectError ? (
+              <p className="text-sm text-coral">{projectError}</p>
+            ) : null}
+            <button
+              disabled={projectBusy || !projectChosen || selectedIds.size === 0}
+              onClick={addSelectedToProject}
+              className="w-full rounded-lg bg-coral text-ink py-3 text-sm font-semibold disabled:opacity-40"
+            >
+              {projectBusy
+                ? "Adding…"
+                : `Add to ${
+                    localProjects.find((p) => p.id === projectChosen)?.name ?? "project"
+                  }`}
+            </button>
+            <button
+              disabled={projectBusy}
+              onClick={() => setProjectSheetOpen(false)}
+              className="w-full text-xs text-fog py-1"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {/* Closed-place review sheet */}
       {reviewOpen ? (
         <div
@@ -700,6 +843,36 @@ export function PlacesList({
                 </button>
               ) : null}
             </div>
+
+            {/* Project */}
+            {localProjects.length > 0 ? (
+              <div className="space-y-1.5">
+                <p className="text-xs text-fog tracking-wide uppercase">
+                  Project
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <FilterChip
+                    active={projectFilter === null}
+                    onClick={() => setProjectFilter(null)}
+                    label="All places"
+                  />
+                  {localProjects.map((p) => (
+                    <FilterChip
+                      key={p.id}
+                      active={projectFilter === p.id}
+                      onClick={() =>
+                        setProjectFilter(projectFilter === p.id ? null : p.id)
+                      }
+                      label={`${p.name} ${
+                        restaurants.filter((r) =>
+                          (membership[r.id] ?? []).includes(p.id),
+                        ).length
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             {/* Tag */}
             {localFolders.length > 0 ? (
@@ -904,7 +1077,9 @@ export function PlacesList({
           <div className="max-w-sm mx-auto bg-ink border border-line rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] p-3 flex items-center gap-3">
             <span className="flex-1 text-sm font-medium text-snow">
               {selectedIds.size === 0
-                ? "Tap places to select"
+                ? targetProjectId
+                  ? "Tap places to add"
+                  : "Tap places to select"
                 : `${selectedIds.size} selected`}
             </span>
             <button
@@ -923,9 +1098,20 @@ export function PlacesList({
                 setChosen(undefined);
                 setMoveTargets(selectedRestaurants);
               }}
-              className="rounded-lg bg-coral text-ink px-3 py-2 text-sm font-semibold disabled:opacity-40"
+              className="rounded-lg bg-card border border-line text-snow px-3 py-2 text-sm font-semibold disabled:opacity-40"
             >
               Tag
+            </button>
+            <button
+              disabled={selectedIds.size === 0}
+              onClick={() => {
+                setProjectError(null);
+                setProjectNewOpen(false);
+                setProjectSheetOpen(true);
+              }}
+              className="rounded-lg bg-coral text-ink px-3 py-2 text-sm font-semibold disabled:opacity-40"
+            >
+              Project
             </button>
             <button
               disabled={selectedIds.size === 0}

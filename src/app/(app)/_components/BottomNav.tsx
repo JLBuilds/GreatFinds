@@ -31,6 +31,19 @@ function MapIcon() {
   );
 }
 
+function ProjectsIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 7.5A2.5 2.5 0 0 1 6.5 5h3.2l1.8 2h6A2.5 2.5 0 0 1 20 9.5v7A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function UserIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -62,6 +75,12 @@ const TABS: Array<{
     label: "Map",
     icon: MapIcon,
     match: (p) => p.startsWith("/map"),
+  },
+  {
+    href: "/projects",
+    label: "Projects",
+    icon: ProjectsIcon,
+    match: (p) => p.startsWith("/projects"),
   },
   {
     href: "/you",

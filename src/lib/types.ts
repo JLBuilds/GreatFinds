@@ -74,6 +74,53 @@ export type Folder = {
   name: string;
 };
 
+/** A trip or occasion that places get saved to (migration 0009). */
+export type Project = {
+  id: string;
+  name: string;
+  city: string | null;
+  start_date: string | null; // YYYY-MM-DD
+  end_date: string | null; // YYYY-MM-DD
+  created_by: string | null;
+  created_at: string;
+};
+
+function fmtDay(iso: string, withYear: boolean): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (!Number.isFinite(d.getTime())) return iso;
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    ...(withYear ? { year: "numeric" } : {}),
+    timeZone: "UTC",
+  });
+}
+
+/** "12–18 Mar 2027", "12 Mar – 2 Apr 2027", "From 12 Mar 2027", or null. */
+export function formatProjectDates(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): string | null {
+  if (start && end) {
+    const sameMonth = start.slice(0, 7) === end.slice(0, 7);
+    if (start === end) return fmtDay(start, true);
+    if (sameMonth) {
+      const dayStart = new Date(`${start}T00:00:00Z`).getUTCDate();
+      return `${dayStart}–${fmtDay(end, true)}`;
+    }
+    return `${fmtDay(start, false)} – ${fmtDay(end, true)}`;
+  }
+  if (start) return `From ${fmtDay(start, true)}`;
+  if (end) return `Until ${fmtDay(end, true)}`;
+  return null;
+}
+
+/** One line for a project card: "Dubai · 12–18 Mar 2027". */
+export function projectSubtitle(p: Pick<Project, "city" | "start_date" | "end_date">): string | null {
+  const parts = [p.city, formatProjectDates(p.start_date, p.end_date)].filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
+}
+
 /* Kept design accents: warm amber = want to try, lilac = been,
    coral = favourite. `pin` doubles as the map marker colour. */
 export const STATUS_META: Record<

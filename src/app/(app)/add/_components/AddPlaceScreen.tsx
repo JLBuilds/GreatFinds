@@ -16,7 +16,9 @@ import {
   type LookupResult,
 } from "./PlaceLookup";
 import { UrlIngest } from "./UrlIngest";
-import { placePhotoUrl, type Folder } from "@/lib/types";
+import { placePhotoUrl, type Folder, type Project } from "@/lib/types";
+import { ProjectPicker } from "../../_components/ProjectPicker";
+import { setPlaceProjects } from "../../projects/actions";
 
 const PLACE_FIELDS = [
   "id",
@@ -64,8 +66,15 @@ function PrefillFromPlaceId({
   return null;
 }
 
-export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
+export function AddPlaceScreen({
+  folders,
+  projects,
+}: {
+  folders: Folder[];
+  projects: Project[];
+}) {
   const router = useRouter();
+  const [projectIds, setProjectIds] = useState<string[]>([]);
   const prefillId = useSearchParams().get("place");
   const [draft, setDraft] = useState<PlaceDraft>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
@@ -117,11 +126,16 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
       notes: draft.notes || null,
       link: draft.link || null,
     });
-    setSaving(false);
     if (!result.success) {
+      setSaving(false);
       setError(result.error ?? "Something went wrong.");
       return;
     }
+    if (projectIds.length > 0 && result.id) {
+      // Best effort: the place is saved either way.
+      await setPlaceProjects(result.id, projectIds);
+    }
+    setSaving(false);
     router.push("/");
     router.refresh();
   }
@@ -233,6 +247,12 @@ export function AddPlaceScreen({ folders }: { folders: Folder[] }) {
         className={lookedUp ? "space-y-5" : "hidden"}
       >
         <PlaceFields draft={draft} onChange={setDraft} folders={folders} compact />
+        <ProjectPicker
+          projects={projects}
+          selected={projectIds}
+          onChange={setProjectIds}
+          hint="Optional — a trip or occasion to save it to."
+        />
 
         {error ? (
           <p className="font-body text-sm text-coral text-center">{error}</p>
