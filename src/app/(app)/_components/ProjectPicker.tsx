@@ -72,7 +72,10 @@ export function NewProjectForm({
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setError("Give the project a name.");
+      return;
+    }
     setBusy(true);
     setError(null);
     const r = await createProject({
@@ -131,7 +134,7 @@ export function NewProjectForm({
         <button
           type="button"
           onClick={submit}
-          disabled={busy || !name.trim()}
+          disabled={busy}
           className="flex-1 rounded-lg bg-coral text-ink px-3 py-2 font-body text-xs font-semibold disabled:opacity-40"
         >
           {busy ? "…" : busyLabel}

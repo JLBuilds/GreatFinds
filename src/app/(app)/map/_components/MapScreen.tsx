@@ -221,6 +221,19 @@ export function MapScreen({
           <span className="text-fog text-xs shrink-0">▾</span>
         </button>
         <div className="flex gap-2 overflow-x-auto -mx-6 px-6">
+          <button
+            onClick={() => setProjectSheetOpen(true)}
+            className={
+              project
+                ? "shrink-0 h-8 rounded-lg bg-lilac text-ink px-3 text-[13px] font-semibold flex items-center gap-1.5 whitespace-nowrap"
+                : "shrink-0 h-8 rounded-lg bg-card/90 border border-lilac/60 text-lilac px-3 text-[13px] font-semibold flex items-center gap-1.5 whitespace-nowrap"
+            }
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h3.2l1.8 2h6A2.5 2.5 0 0 1 20 9.5v7A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+            </svg>
+            {project ? project.name : "Project"}
+          </button>
           {FILTERS.map((f) => (
             <button
               key={f.key}
