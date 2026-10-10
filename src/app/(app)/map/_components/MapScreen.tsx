@@ -110,7 +110,8 @@ function AreaSuggestions({
         const { AutocompleteSuggestion } = places as any;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const req: any = { input: q, includedPrimaryTypes: ["(regions)"] };
-        if (bias) req.locationBias = { center: bias, radius: 80_000 };
+        // Google caps the bias radius at 50 km.
+        if (bias) req.locationBias = { center: bias, radius: 50_000 };
         const { suggestions } =
           await AutocompleteSuggestion.fetchAutocompleteSuggestions(req);
         if (!cancelled) setItems((suggestions ?? []).slice(0, 4));
