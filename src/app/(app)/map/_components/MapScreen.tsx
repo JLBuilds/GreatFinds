@@ -69,21 +69,31 @@ export function MapScreen({
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const [openId, setOpenId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   // Same filters as the Home tab.
   const pf = usePlaceFilters({ restaurants, folders, projects, membership });
   const project = projects.find((p) => p.id === pf.projectFilter) ?? null;
 
   const { matches } = pf;
+  const q = query.trim().toLowerCase();
   const visible = useMemo(
-    () => restaurants.filter((r) => !isHiddenClosed(r) && matches(r)),
-    [restaurants, matches],
+    () =>
+      restaurants.filter((r) => {
+        if (isHiddenClosed(r) || !matches(r)) return false;
+        if (!q) return true;
+        return [r.name, r.cuisine, r.area, r.city, r.recommended_by, r.notes]
+          .filter(Boolean)
+          .some((f) => (f as string).toLowerCase().includes(q));
+      }),
+    [restaurants, matches, q],
   );
-  // Re-frame the map whenever a project is selected and the visible set
-  // changes; with no project, leave the user's view alone.
-  const fitKey = pf.projectFilter
-    ? `${pf.projectFilter}:${visible.map((r) => r.id).join(",")}`
-    : "all";
+  // Re-frame the map when a search or a project narrows the set; with
+  // neither, leave the user's view alone.
+  const fitKey =
+    q || pf.projectFilter
+      ? `${pf.projectFilter ?? ""}|${q}|${visible.map((r) => r.id).join(",")}`
+      : "all";
 
   const center = useMemo(() => {
     if (visible.length === 0) return FALLBACK_CENTER;
@@ -107,7 +117,10 @@ export function MapScreen({
     );
   }
 
-  const open = visible.find((r) => r.id === openId) ?? null;
+  const open =
+    (q && visible.length === 1 ? visible[0] : null) ??
+    visible.find((r) => r.id === openId) ??
+    null;
   const openMeta = open ? STATUS_META[open.status] : null;
   const openWho = open
     ? (open.recommended_by ?? null)
@@ -165,36 +178,66 @@ export function MapScreen({
       </APIProvider>
 
       {/* Top gradient + chrome, per map-explore.html */}
-      <div className="pointer-events-none absolute top-0 left-0 right-0 h-[106px] bg-gradient-to-b from-ink/95 via-ink/75 to-transparent" />
+      <div className="pointer-events-none absolute top-0 left-0 right-0 h-[170px] bg-gradient-to-b from-ink/95 via-ink/70 to-transparent" />
 
       <div className="absolute top-4 left-0 right-0 max-w-sm mx-auto px-6 flex flex-col gap-3">
         <div
           className={
             project
-              ? "h-[46px] rounded-lg bg-lilac/20 border border-lilac/50 backdrop-blur flex items-center gap-2.5 px-3.5"
+              ? "h-[46px] rounded-lg bg-card/95 border border-lilac/60 backdrop-blur flex items-center gap-2.5 px-3.5"
               : "h-[46px] rounded-lg bg-card/95 border border-line backdrop-blur flex items-center gap-2.5 px-3.5"
           }
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0" aria-hidden="true">
-            <path
-              d="M4 7.5A2.5 2.5 0 0 1 6.5 5h3.2l1.8 2h6A2.5 2.5 0 0 1 20 9.5v7A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"
-              stroke={project ? "#9288E0" : "#889898"}
-              strokeWidth="1.6"
-              strokeLinejoin="round"
-            />
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="shrink-0" aria-hidden="true">
+            <circle cx="7.6" cy="7.6" r="6.1" stroke="#889898" strokeWidth="1.5" />
+            <path d="M12.2 12.2 16.2 16.2" stroke="#889898" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-          <span className="min-w-0 flex-1 truncate">
-            <span className={project ? "text-[15px] font-semibold text-snow" : "text-[15px] font-medium text-snow"}>
-              {project ? project.name : "Your map"}
-            </span>
-            <span className="text-[15px] text-fog">
-              {" "}· {visible.length} {project ? "in project" : "on map"}
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpenId(null);
+            }}
+            placeholder={project ? `Search in ${project.name}…` : "Search your places…"}
+            aria-label="Search places on the map"
+            className="flex-1 min-w-0 bg-transparent text-[15px] text-snow placeholder:text-fog focus:outline-none"
+          />
+          {query ? (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="text-fog text-lg leading-none px-1"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <FiltersButton filters={pf} onMap />
+          <span
+            className={
+              project
+                ? "h-8 rounded-lg bg-lilac/20 border border-lilac/50 backdrop-blur text-lilac px-3 text-[13px] font-semibold flex items-center gap-1.5 whitespace-nowrap truncate max-w-[60%]"
+                : "h-8 rounded-lg bg-card/90 border border-line backdrop-blur text-fog px-3 text-[13px] font-medium flex items-center whitespace-nowrap"
+            }
+          >
+            {project ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+                <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h3.2l1.8 2h6A2.5 2.5 0 0 1 20 9.5v7A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+              </svg>
+            ) : null}
+            <span className="truncate">
+              {project ? `${project.name} · ${visible.length}` : `${visible.length} on map`}
             </span>
           </span>
         </div>
-        <div className="flex items-center justify-between">
-          <FiltersButton filters={pf} onMap />
-        </div>
+        {q && visible.length === 0 ? (
+          <p className="text-[13px] text-fog bg-card/90 border border-line backdrop-blur rounded-lg px-3 py-2">
+            Nothing on the map matches “{query.trim()}”.
+          </p>
+        ) : null}
       </div>
 
       {/* Selected place sheet, per the design */}
