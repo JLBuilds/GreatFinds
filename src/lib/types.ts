@@ -1,4 +1,5 @@
 import type { Amenities, OpeningHours } from "@/lib/hours";
+import type { BusinessStatus } from "@/lib/google-places";
 
 export type RestaurantStatus = "want_to_try" | "been" | "favorite";
 
@@ -43,9 +44,25 @@ export type Restaurant = {
   amenities?: Amenities | null;
   phone?: string | null;
   google_synced_at?: string | null;
+  // Business lifecycle from Google (migration 0008).
+  business_status?: BusinessStatus | null;
+  closed_detected_at?: string | null;
+  dismissed_closed?: boolean | null;
+  business_status_checked_at?: string | null;
   created_at: string;
   updated_at: string;
 };
+
+/** Google reports this place permanently closed. */
+export function isPermanentlyClosed(r: Restaurant): boolean {
+  return r.business_status === "CLOSED_PERMANENTLY";
+}
+
+/** Permanently closed and not yet reviewed — hidden from the main list
+ *  and surfaced in the closed-review area instead. */
+export function isHiddenClosed(r: Restaurant): boolean {
+  return isPermanentlyClosed(r) && !r.dismissed_closed;
+}
 
 export type Profile = {
   user_id: string;

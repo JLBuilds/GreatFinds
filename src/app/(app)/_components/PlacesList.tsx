@@ -3,7 +3,12 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createFolder, deleteRestaurants, setRestaurantFolder } from "../actions";
+import {
+  createFolder,
+  deleteRestaurants,
+  dismissClosedFlag,
+  setRestaurantFolder,
+} from "../actions";
 import { GoogleFallbackSearch } from "./GoogleFallbackSearch";
 import { PlacePhoto } from "./PlacePhoto";
 import { openStatus } from "@/lib/hours";
@@ -11,6 +16,7 @@ import {
   STATUS_META,
   extractUrl,
   initials,
+  isHiddenClosed,
   prettyDomain,
   priceLabel,
   priceLevelOf,
@@ -94,6 +100,9 @@ export function PlacesList({
   const [confirmDeleteIds, setConfirmDeleteIds] = useState<string[] | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // Closed-place review
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [closedBusyId, setClosedBusyId] = useState<string | null>(null);
   const [moveNewOpen, setMoveNewOpen] = useState(false);
   const [moveNewName, setMoveNewName] = useState("");
   // Multi-select
@@ -142,10 +151,33 @@ export function PlacesList({
     return m;
   }, [localFolders]);
 
+  // Places Google reports permanently closed, awaiting the user's review.
+  const closedForReview = useMemo(
+    () => restaurants.filter(isHiddenClosed),
+    [restaurants],
+  );
+
+  async function keepClosed(id: string) {
+    setClosedBusyId(id);
+    await dismissClosedFlag(id);
+    setClosedBusyId(null);
+    router.refresh();
+  }
+
+  async function removeClosed(id: string) {
+    setClosedBusyId(id);
+    const r = await deleteRestaurants([id]);
+    setClosedBusyId(null);
+    if (r.success) router.refresh();
+  }
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return restaurants
       .filter((r) => {
+        // Permanently closed and not yet reviewed: hidden here, shown in
+        // the closed-review sheet instead.
+        if (isHiddenClosed(r)) return false;
         if (filter !== "all" && r.status !== filter) return false;
         if (folderId === "none" && r.folder_id !== null) return false;
         if (folderId !== null && folderId !== "none" && r.folder_id !== folderId)
@@ -417,6 +449,32 @@ export function PlacesList({
         )}
       </div>
 
+      {/* Closed-place review banner */}
+      {closedForReview.length > 0 && !selectMode ? (
+        <button
+          onClick={() => setReviewOpen(true)}
+          className="w-full flex items-center gap-3 rounded-xl bg-coral/10 border border-coral/40 p-3 text-left"
+        >
+          <span className="w-8 h-8 rounded-lg bg-coral/20 text-coral flex items-center justify-center shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 8v5M12 16.5v.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M10.3 3.9 2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-snow">
+              {closedForReview.length === 1
+                ? "1 place may have closed"
+                : `${closedForReview.length} places may have closed`}
+            </span>
+            <span className="block text-xs text-fog">
+              Google reports them permanently closed — review to keep or remove.
+            </span>
+          </span>
+          <span className="text-coral text-xs font-semibold shrink-0">Review →</span>
+        </button>
+      ) : null}
+
       {/* 2-column tile grid (Groove library style) */}
       <div className="grid grid-cols-2 gap-3">
         {filtered.map((r) => {
@@ -549,6 +607,76 @@ export function PlacesList({
           bias={searchBias}
           auto={false}
         />
+      ) : null}
+
+      {/* Closed-place review sheet */}
+      {reviewOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-night/70"
+          onClick={() => (closedBusyId ? null : setReviewOpen(false))}
+        >
+          <div
+            className="w-full max-w-sm bg-ink border-t border-line rounded-t-2xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-[15px] font-semibold text-white">
+                Possibly closed
+              </p>
+              <button
+                onClick={() => setReviewOpen(false)}
+                className="text-xs text-fog"
+              >
+                Done
+              </button>
+            </div>
+            <p className="text-xs text-fog">
+              Google reports these permanently closed. Keep one if it&apos;s
+              still going, or remove it for good.
+            </p>
+            {closedForReview.length === 0 ? (
+              <p className="text-sm text-fog text-center py-4">
+                Nothing to review. 🎉
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto no-scrollbar">
+                {closedForReview.map((r) => (
+                  <div
+                    key={r.id}
+                    className="rounded-xl bg-card border border-line p-3 space-y-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-snow truncate">
+                        {r.name}
+                      </p>
+                      <p className="text-xs text-fog truncate">
+                        {[r.cuisine, r.area ?? r.city]
+                          .filter(Boolean)
+                          .join(" · ") || "Permanently closed"}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        disabled={closedBusyId === r.id}
+                        onClick={() => keepClosed(r.id)}
+                        className="flex-1 rounded-lg bg-card border border-line text-snow py-2 text-xs font-semibold disabled:opacity-40"
+                      >
+                        {closedBusyId === r.id ? "…" : "Keep"}
+                      </button>
+                      <button
+                        disabled={closedBusyId === r.id}
+                        onClick={() => removeClosed(r.id)}
+                        className="flex-1 rounded-lg bg-coral text-ink py-2 text-xs font-semibold disabled:opacity-40"
+                      >
+                        {closedBusyId === r.id ? "…" : "Remove"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       ) : null}
 
       {/* Filters sheet */}

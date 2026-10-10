@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   deleteRestaurant,
+  dismissClosedFlag,
   setRestaurantStatus,
   updateRestaurant,
 } from "../../../actions";
@@ -21,6 +22,7 @@ import { FolderPicker } from "./FolderPicker";
 import { LinkedText } from "@/components/LinkedText";
 import {
   STATUS_META,
+  isPermanentlyClosed,
   placePhotoUrl,
   priceLabel,
   type Folder,
@@ -71,6 +73,7 @@ export function PlaceDetail({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [shareNote, setShareNote] = useState<string | null>(null);
+  const [closedBusy, setClosedBusy] = useState(false);
 
   async function share() {
     const url = `${window.location.origin}/s/${restaurant.id}`;
@@ -315,6 +318,47 @@ export function PlaceDetail({
             </p>
           ) : null}
           <HoursAndAmenities place={restaurant} />
+          {isPermanentlyClosed(restaurant) ? (
+            <div className="rounded-xl bg-coral/10 border border-coral/40 p-3 space-y-2">
+              <p className="font-body text-sm font-semibold text-snow">
+                Google reports this permanently closed
+              </p>
+              {isOwner ? (
+                <>
+                  <p className="font-body text-xs text-fog">
+                    Keep it if it&apos;s still going, or remove it for good.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={closedBusy}
+                      onClick={async () => {
+                        setClosedBusy(true);
+                        await dismissClosedFlag(restaurant.id);
+                        setClosedBusy(false);
+                        router.refresh();
+                      }}
+                      className="flex-1 rounded-lg bg-card border border-line text-snow py-2 text-xs font-semibold disabled:opacity-40"
+                    >
+                      {closedBusy ? "…" : "Keep it"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={closedBusy}
+                      onClick={() => deleteRestaurant(restaurant.id)}
+                      className="flex-1 rounded-lg bg-coral text-ink py-2 text-xs font-semibold disabled:opacity-40"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          ) : restaurant.business_status === "CLOSED_TEMPORARILY" ? (
+            <p className="font-body text-xs text-warm">
+              ⚠ Google reports this temporarily closed.
+            </p>
+          ) : null}
           {!isOwner && folderName ? (
             <span className="inline-flex items-center gap-1 rounded-md bg-lilac/20 text-lilac px-2 py-1 font-body text-[11px] font-semibold uppercase tracking-[0.06em]">
               🏷️ {folderName}

@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdmin } from "@/lib/admin";
-import { fetchPlaceDetails, fetchPlacePhotoNames } from "@/lib/google-places";
+import {
+  fetchBusinessStatus,
+  fetchPlaceDetails,
+  fetchPlacePhotoNames,
+  type BusinessStatus,
+} from "@/lib/google-places";
 import { needsSync } from "@/lib/hours";
 import { extractUrl, type ListingType, type RestaurantStatus } from "@/lib/types";
 
@@ -307,7 +312,7 @@ export async function syncPlaceDetails(
   const admin = createAdminClient();
   const { data: row, error: readError } = await admin
     .from("restaurants")
-    .select("id, google_place_id, google_synced_at")
+    .select("id, google_place_id, google_synced_at, business_status")
     .eq("id", id)
     .maybeSingle();
   if (readError) return { success: false, error: readError.message };
@@ -321,15 +326,131 @@ export async function syncPlaceDetails(
   const details = await fetchPlaceDetails(row.google_place_id);
   if (!details) return { success: false, error: "Google lookup failed." };
 
+  const now = new Date().toISOString();
   const { error } = await admin
     .from("restaurants")
-    .update({ ...details, google_synced_at: new Date().toISOString() })
+    .update({
+      ...details,
+      ...lifecyclePatch(row.business_status, details.business_status, now),
+      google_synced_at: now,
+    })
     .eq("id", id);
   if (error) return { success: false, error: error.message };
 
   revalidatePath("/");
   revalidatePath(`/place/${id}`);
   revalidatePath(`/s/${id}`);
+  return { success: true, id };
+}
+
+/** Columns to update for a place's open/closed lifecycle, given its
+ *  previous status and the one Google just reported. Stamps when a
+ *  permanent closure is first seen, and clears the closed flags (and the
+ *  user's "keep anyway") if it reopens. */
+function lifecyclePatch(
+  prev: BusinessStatus | null | undefined,
+  next: BusinessStatus | null,
+  now: string,
+): Record<string, unknown> {
+  const patch: Record<string, unknown> = {
+    business_status: next,
+    business_status_checked_at: now,
+  };
+  if (next === "CLOSED_PERMANENTLY") {
+    if (prev !== "CLOSED_PERMANENTLY") patch.closed_detected_at = now;
+  } else {
+    // Reopened or temporarily closed: drop the permanent-closure state.
+    patch.closed_detected_at = null;
+    patch.dismissed_closed = false;
+  }
+  return patch;
+}
+
+/** The weekly health check: for every place with a Google listing, refresh
+ *  its open/closed status. Permanently closed places get flagged (and, via
+ *  isHiddenClosed, hidden pending review); reopened ones are un-flagged.
+ *  Service-role — called by the cron route, which guards access. Returns a
+ *  summary; never deletes anything. */
+export async function runBusinessStatusSweep(): Promise<{
+  checked: number;
+  closed: number;
+  reopened: number;
+  gone: number;
+  failed: number;
+}> {
+  const admin = createAdminClient();
+  const { data: rows, error } = await admin
+    .from("restaurants")
+    .select("id, google_place_id, business_status")
+    .not("google_place_id", "is", null);
+  if (error || !rows) {
+    console.error("[sweep] read failed:", error?.message);
+    return { checked: 0, closed: 0, reopened: 0, gone: 0, failed: 0 };
+  }
+
+  const now = new Date().toISOString();
+  let checked = 0;
+  let closed = 0;
+  let reopened = 0;
+  let gone = 0;
+  let failed = 0;
+
+  for (const row of rows) {
+    const placeId = row.google_place_id as string | null;
+    if (!placeId) continue;
+    const result = await fetchBusinessStatus(placeId);
+    if (result === null) {
+      failed++;
+      continue;
+    }
+    checked++;
+    // A 404 from Google means the listing is gone — treat as closed.
+    const status: BusinessStatus =
+      result === "GONE" ? "CLOSED_PERMANENTLY" : result;
+    if (result === "GONE") gone++;
+
+    const prev = row.business_status as BusinessStatus | null;
+    if (status === "CLOSED_PERMANENTLY" && prev !== "CLOSED_PERMANENTLY") {
+      closed++;
+    } else if (status !== "CLOSED_PERMANENTLY" && prev === "CLOSED_PERMANENTLY") {
+      reopened++;
+    }
+
+    const { error: upErr } = await admin
+      .from("restaurants")
+      .update(lifecyclePatch(prev, status, now))
+      .eq("id", row.id);
+    if (upErr) {
+      console.error("[sweep] update failed:", row.id, upErr.message);
+      failed++;
+    }
+  }
+
+  revalidatePath("/");
+  revalidatePath("/map");
+  return { checked, closed, reopened, gone, failed };
+}
+
+/** Keep a place the weekly check flagged as closed — Google was wrong, or
+ *  the user wants it anyway. Clears the hide without changing the status,
+ *  so it won't be re-hidden unless Google reports a *new* closure. */
+export async function dismissClosedFlag(id: string): Promise<Result> {
+  if (!id) return { success: false, error: "Missing id." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not signed in." };
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("restaurants")
+    .update({ dismissed_closed: true })
+    .eq("id", id);
+  if (error) return { success: false, error: error.message };
+  revalidatePath("/");
+  revalidatePath("/map");
+  revalidatePath(`/place/${id}`);
   return { success: true, id };
 }
 

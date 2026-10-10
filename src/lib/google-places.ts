@@ -46,14 +46,59 @@ export async function fetchPlacePhotoNames(placeId: string): Promise<string[]> {
     .slice(0, 8);
 }
 
+export type BusinessStatus =
+  | "OPERATIONAL"
+  | "CLOSED_TEMPORARILY"
+  | "CLOSED_PERMANENTLY";
+
+function asBusinessStatus(v: unknown): BusinessStatus | null {
+  return v === "OPERATIONAL" ||
+    v === "CLOSED_TEMPORARILY" ||
+    v === "CLOSED_PERMANENTLY"
+    ? v
+    : null;
+}
+
 export type PlaceDetailsSync = {
   opening_hours: OpeningHours | null;
   utc_offset_minutes: number | null;
   amenities: Amenities | null;
   phone: string | null;
+  business_status: BusinessStatus | null;
 };
 
+/** Just the open/closed lifecycle for a place — the cheapest field mask,
+ *  used by the weekly sweep. Returns null when the key is missing or the
+ *  lookup fails; returns "GONE" when Google 404s the place id, which also
+ *  means it no longer exists. */
+export async function fetchBusinessStatus(
+  placeId: string,
+): Promise<BusinessStatus | "GONE" | null> {
+  const key = apiKey();
+  if (!key || !placeId) return null;
+  const res = await fetch(
+    `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
+    {
+      headers: {
+        "X-Goog-Api-Key": key,
+        "X-Goog-FieldMask": "businessStatus",
+        Referer: referer(),
+      },
+      cache: "no-store",
+    },
+  );
+  if (res.status === 404) return "GONE";
+  if (!res.ok) {
+    console.error("[google-places] status failed:", res.status, await res.text());
+    return null;
+  }
+  const j = (await res.json()) as { businessStatus?: unknown };
+  // Google omits businessStatus when a place is operational.
+  return asBusinessStatus(j.businessStatus) ?? "OPERATIONAL";
+}
+
 const DETAIL_FIELDS = [
+  "businessStatus",
   "regularOpeningHours",
   "utcOffsetMinutes",
   "nationalPhoneNumber",
@@ -127,5 +172,7 @@ export async function fetchPlaceDetails(
       typeof j.utcOffsetMinutes === "number" ? j.utcOffsetMinutes : null,
     amenities: Object.keys(amenities).length > 0 ? amenities : null,
     phone: typeof j.nationalPhoneNumber === "string" ? j.nationalPhoneNumber : null,
+    // Google omits businessStatus when a place is operational.
+    business_status: asBusinessStatus(j.businessStatus) ?? "OPERATIONAL",
   };
 }
