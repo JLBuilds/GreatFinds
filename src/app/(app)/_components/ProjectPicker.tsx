@@ -4,8 +4,12 @@ import { useState } from "react";
 import { createProject } from "../projects/actions";
 import { projectSubtitle, type Project } from "@/lib/types";
 
-const inputCls =
-  "w-full min-w-0 max-w-full rounded-lg bg-card border border-line px-3 py-2 font-body text-xs text-snow placeholder:text-fog/70 focus:outline-none focus:border-coral/60 [color-scheme:dark]";
+const inputBase =
+  "w-full min-w-0 max-w-full rounded-lg border border-line px-3 py-2 font-body text-xs text-snow placeholder:text-fog/70 focus:outline-none focus:border-coral/60 [color-scheme:dark]";
+/** Inputs sitting on the ink page background. */
+const inputCls = `${inputBase} bg-card`;
+/** Inputs sitting inside a card, so they need to be darker to read. */
+const inputOnCardCls = `${inputBase} bg-ink`;
 
 /** iOS renders an empty <input type="date"> as a blank box and gives it an
  *  intrinsic width that ignores the grid. Pin the size and overlay a hint
@@ -15,11 +19,14 @@ export function DateField({
   value,
   min,
   onChange,
+  onCard = false,
 }: {
   label: string;
   value: string;
   min?: string;
   onChange: (v: string) => void;
+  /** Set when the field sits inside a card (darker well). */
+  onCard?: boolean;
 }) {
   return (
     <label className="block min-w-0 space-y-1">
@@ -32,7 +39,7 @@ export function DateField({
           value={value}
           min={min || undefined}
           onChange={(e) => onChange(e.target.value)}
-          className={`${inputCls} block h-9 appearance-none`}
+          className={`${onCard ? inputOnCardCls : inputCls} block h-9 appearance-none`}
         />
         {!value ? (
           <span
@@ -95,27 +102,28 @@ export function NewProjectForm({
   }
 
   return (
-    <div className="space-y-2 rounded-lg bg-card/60 border border-line p-3">
+    <div className="space-y-2 rounded-xl bg-card border border-line p-3">
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Project name (e.g. Dubai long weekend)"
-        className={inputCls}
+        className={inputOnCardCls}
         autoFocus
       />
       <input
         value={city}
         onChange={(e) => setCity(e.target.value)}
         placeholder="City (optional)"
-        className={inputCls}
+        className={inputOnCardCls}
       />
       <div className="grid grid-cols-2 gap-2 min-w-0">
-        <DateField label="From (optional)" value={start} onChange={setStart} />
+        <DateField label="From (optional)" value={start} onChange={setStart} onCard />
         <DateField
           label="To (optional)"
           value={end}
           min={start}
           onChange={setEnd}
+          onCard
         />
       </div>
       {error ? <p className="font-body text-xs text-coral">{error}</p> : null}
@@ -132,7 +140,7 @@ export function NewProjectForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg bg-card border border-line text-mist px-3 py-2 font-body text-xs"
+            className="rounded-lg bg-ink border border-line text-mist px-3 py-2 font-body text-xs"
           >
             Cancel
           </button>
