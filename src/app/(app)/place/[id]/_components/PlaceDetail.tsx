@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -139,25 +139,36 @@ export function PlaceDetail({
     router.refresh();
   }
 
+  // Ref guard, not just `busy` state: on mobile a fast double-tap can fire
+  // two submits in the same tick before React re-renders the disabled
+  // button, which otherwise sends two save requests.
+  const savingRef = useRef(false);
+
   async function saveEdits() {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setBusy(true);
     setError(null);
-    const result = await updateRestaurant(restaurant.id, {
-      ...draft,
-      cuisine: draft.cuisine || null,
-      area: draft.area || null,
-      city: draft.city || null,
-      recommended_by: draft.recommended_by || null,
-      notes: draft.notes || null,
-      link: draft.link || null,
-    });
-    setBusy(false);
-    if (!result.success) {
-      setError(result.error ?? "Something went wrong.");
-      return;
+    try {
+      const result = await updateRestaurant(restaurant.id, {
+        ...draft,
+        cuisine: draft.cuisine || null,
+        area: draft.area || null,
+        city: draft.city || null,
+        recommended_by: draft.recommended_by || null,
+        notes: draft.notes || null,
+        link: draft.link || null,
+      });
+      if (!result.success) {
+        setError(result.error ?? "Something went wrong.");
+        return;
+      }
+      setEditing(false);
+      router.refresh();
+    } finally {
+      savingRef.current = false;
+      setBusy(false);
     }
-    setEditing(false);
-    router.refresh();
   }
 
   if (editing) {

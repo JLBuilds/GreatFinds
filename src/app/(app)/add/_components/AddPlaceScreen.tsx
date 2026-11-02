@@ -114,7 +114,13 @@ export function AddPlaceScreen({
     setError(null);
   }
 
+  // Ref guard against a fast double-tap firing two creates before the
+  // disabled button re-renders — that would make a duplicate listing.
+  const savingRef = useRef(false);
+
   async function save() {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     setError(null);
     const result = await createRestaurant({
@@ -127,6 +133,7 @@ export function AddPlaceScreen({
       link: draft.link || null,
     });
     if (!result.success) {
+      savingRef.current = false;
       setSaving(false);
       setError(result.error ?? "Something went wrong.");
       return;
@@ -135,7 +142,8 @@ export function AddPlaceScreen({
       // Best effort: the place is saved either way.
       await setPlaceProjects(result.id, projectIds);
     }
-    setSaving(false);
+    // Leave savingRef latched (true) on success: we're navigating away, so
+    // the button must stay inert until the route changes.
     router.push("/");
     router.refresh();
   }
